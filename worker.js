@@ -1,195 +1,1200 @@
 const ALLOWED_ORIGINS = [
-  "https://5dragonsacademy.pl",
-  "https://www.5dragonsacademy.pl",
-  "http://localhost:5500",
-  "http://127.0.0.1:5500",
-  "null"
+    "https://5dragons.matkosmo27.workers.dev",
+    "https://5dragonsacademy.pl",
+    "https://www.5dragonsacademy.pl",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "null"
 ];
 
-const jsonHeaders = { "Content-Type": "application/json; charset=utf-8" };
+function getCorsOrigin(request) {
+    const origin = request.headers.get("Origin");
 
-function cors(request) {
-  const origin = request.headers.get("Origin") || "null";
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Credentials": "true",
-    "Vary": "Origin"
-  };
+    if (!origin) {
+        return "*";
+    }
+
+    if (ALLOWED_ORIGINS.includes(origin)) {
+        return origin;
+    }
+
+    return "*";
 }
 
-function response(body, status, request) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...jsonHeaders, ...cors(request) }
-  });
+function corsHeaders(request) {
+    return {
+        "Access-Control-Allow-Origin": getCorsOrigin(request),
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Max-Age": "86400"
+    };
 }
 
-function ok(data, request, status = 200) { return response({ success: true, ...data }, status, request); }
-function fail(error, request, status = 400) { return response({ success: false, error }, status, request); }
+function json(request, data, status = 200) {
+    return new Response(JSON.stringify(data), {
+        status,
+        headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": "no-store",
+            ...corsHeaders(request)
+        }
+    });
+}
+
+function errorResponse(request, message, status = 400) {
+    return json(request, {
+        success: false,
+        error: message
+    }, status);
+}
 
 async function readJson(request) {
-  try { return await request.json(); } catch { return null; }
+    try {
+        return await request.json();
+    } catch {
+        return null;
+    }
 }
 
-async function hash(value) {
-  const data = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2, "0")).join("");
+function getPathParts(url) {
+    return url.pathname
+        .replace(/^\/+|\/+$/g, "")
+        .split("/")
+        .filter(Boolean);
 }
 
-function safeText(v, max = 10000) {
-  return String(v ?? "").trim().slice(0, max);
+function getIdFromPath(parts) {
+    const last = parts[parts.length - 1];
+
+    if (!last || !/^\d+$/.test(last)) {
+        return null;
+    }
+
+    return Number(last);
 }
 
-function allowedTable(name) {
-  return ["players","news","matches","recruitment","achievements","users"].includes(name);
+async function sha256(value) {
+    const data = new TextEncoder().encode(value);
+
+    const hash = await crypto.subtle.digest(
+        "SHA-256",
+        data
+    );
+
+    return Array.from(new Uint8Array(hash))
+        .map(byte => byte.toString(16).padStart(2, "0"))
+        .join("");
 }
 
-async function ensureSchema(env) {
-  await env.DB.batch([
-    env.DB.prepare(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, email TEXT UNIQUE, password_hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'user', created_at TEXT DEFAULT CURRENT_TIMESTAMP)`),
-    env.DB.prepare(`CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, nickname TEXT, role TEXT, team TEXT DEFAULT 'Main', avatar TEXT, faceit TEXT, steam TEXT, kd REAL DEFAULT 0, adr REAL DEFAULT 0, elo INTEGER DEFAULT 0, level INTEGER DEFAULT 0, bio TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)`),
-    env.DB.prepare(`CREATE TABLE IF NOT EXISTS news (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, excerpt TEXT, content TEXT, image TEXT, category TEXT DEFAULT 'News', author TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)`),
-    env.DB.prepare(`CREATE TABLE IF NOT EXISTS matches (id INTEGER PRIMARY KEY AUTOINCREMENT, opponent TEXT NOT NULL, event TEXT, date TEXT, time TEXT, map TEXT, result TEXT, score TEXT, status TEXT DEFAULT 'upcoming', logo TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)`),
-    env.DB.prepare(`CREATE TABLE IF NOT EXISTS recruitment (id INTEGER PRIMARY KEY AUTOINCREMENT, discord TEXT, cs2 TEXT, faceit INTEGER, role TEXT, faceit_url TEXT, steam TEXT, age INTEGER, about TEXT, availability TEXT, status TEXT DEFAULT 'new', created_at TEXT DEFAULT CURRENT_TIMESTAMP)`),
-    env.DB.prepare(`CREATE TABLE IF NOT EXISTS achievements (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT, icon TEXT, date TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)`),
-    env.DB.prepare(`CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER NOT NULL, expires_at INTEGER NOT NULL)`)
-  ]);
+function generateToken() {
+    return `${crypto.randomUUID()}-${crypto.randomUUID()}-${crypto.randomUUID()}`;
 }
 
-async function currentUser(env, request) {
-  const auth = request.headers.get("Authorization") || "";
-  if (!auth.startsWith("Bearer ")) return null;
-  const token = auth.slice(7);
-  const row = await env.DB.prepare(`SELECT u.id,u.username,u.email,u.role FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>?`).bind(token, Date.now()).first();
-  return row || null;
+async function getSessionUser(request, env) {
+    const authHeader = request.headers.get("Authorization");
+
+    if (!authHeader) {
+        return null;
+    }
+
+    if (!authHeader.startsWith("Bearer ")) {
+        return null;
+    }
+
+    const token = authHeader.substring(7).trim();
+
+    if (!token) {
+        return null;
+    }
+
+    const tokenHash = await sha256(token);
+
+    const result = await env.DB.prepare(`
+        SELECT
+            users.id,
+            users.email,
+            users.discord,
+            users.cs2_nick,
+            users.steam,
+            users.role,
+            users.team,
+            users.created_at,
+            sessions.id AS session_id
+        FROM sessions
+        INNER JOIN users
+            ON users.id = sessions.user_id
+        WHERE sessions.token_hash = ?
+          AND sessions.expires_at > CURRENT_TIMESTAMP
+        LIMIT 1
+    `)
+        .bind(tokenHash)
+        .first();
+
+    if (!result) {
+        return null;
+    }
+
+    try {
+        await env.DB.prepare(`
+            UPDATE sessions
+            SET last_used_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `)
+            .bind(result.session_id)
+            .run();
+    } catch {
+        // Aktualizacja last_used_at nie może blokować użytkownika.
+    }
+
+    return result;
 }
 
-function requireAdmin(user, request) {
-  if (!user || !["admin","owner","staff"].includes(user.role)) return fail("Brak uprawnień administratora.", request, 403);
-  return null;
+async function requireAuth(request, env) {
+    const user = await getSessionUser(request, env);
+
+    if (!user) {
+        return {
+            ok: false,
+            response: errorResponse(
+                request,
+                "Brak autoryzacji.",
+                401
+            )
+        };
+    }
+
+    return {
+        ok: true,
+        user
+    };
 }
 
-async function list(env, table, request) {
-  if (!allowedTable(table)) return fail("Nieprawidłowa tabela.", request, 400);
-  const result = await env.DB.prepare(`SELECT * FROM ${table} ORDER BY id DESC LIMIT 200`).all();
-  return ok({ data: result.results || [] }, request);
+async function requireAdmin(request, env) {
+    const auth = await requireAuth(request, env);
+
+    if (!auth.ok) {
+        return auth;
+    }
+
+    const allowedRoles = [
+        "OWNER",
+        "ADMIN",
+        "MANAGER",
+        "COACH",
+        "EDITOR"
+    ];
+
+    if (!allowedRoles.includes(auth.user.role)) {
+        return {
+            ok: false,
+            response: errorResponse(
+                request,
+                "Brak uprawnień.",
+                403
+            )
+        };
+    }
+
+    return auth;
 }
 
-async function insert(env, table, data, request) {
-  if (!allowedTable(table)) return fail("Nieprawidłowa tabela.", request, 400);
-  const columns = Object.keys(data || {}).filter(k => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k));
-  if (!columns.length) return fail("Brak prawidłowych danych.", request, 400);
-  const placeholders = columns.map(() => "?").join(",");
-  const values = columns.map(k => data[k]);
-  const result = await env.DB.prepare(`INSERT INTO ${table} (${columns.join(",")}) VALUES (${placeholders})`).bind(...values).run();
-  return ok({ id: result.meta?.last_row_id || null }, request, 201);
+async function tableExists(env, tableName) {
+    const result = await env.DB.prepare(`
+        SELECT name
+        FROM sqlite_master
+        WHERE type = 'table'
+          AND name = ?
+        LIMIT 1
+    `)
+        .bind(tableName)
+        .first();
+
+    return !!result;
 }
 
-async function remove(env, table, id, request) {
-  if (!allowedTable(table)) return fail("Nieprawidłowa tabela.", request, 400);
-  await env.DB.prepare(`DELETE FROM ${table} WHERE id=?`).bind(id).run();
-  return ok({}, request);
+async function getTableColumns(env, tableName) {
+    const result = await env.DB.prepare(
+        `PRAGMA table_info(${tableName})`
+    ).all();
+
+    return (result.results || []).map(column => column.name);
 }
 
-async function sendContact(env, data, request) {
-  const name = safeText(data.name, 120);
-  const email = safeText(data.email, 200);
-  const subject = safeText(data.subject, 200);
-  const message = safeText(data.message, 5000);
-  if (!name || !email || !message) return fail("Uzupełnij wymagane pola.", request, 400);
-  if (!env.RESEND_API_KEY) return fail("Brak konfiguracji poczty.", request, 500);
-  const r = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: "5DRAGONS <onboarding@resend.dev>",
-      to: ["matkosmo27@gmail.com"],
-      reply_to: email,
-      subject: `5DRAGONS | ${subject || "Kontakt"}`,
-      text: `Nowa wiadomość z formularza 5DRAGONS\n\nImię: ${name}\nEmail: ${email}\nTemat: ${subject}\n\n${message}`
-    })
-  });
-  if (!r.ok) return fail("Nie udało się wysłać wiadomości.", request, 502);
-  return ok({ message: "Wiadomość została wysłana." }, request);
+function normalizeValue(value) {
+    if (value === undefined) {
+        return null;
+    }
+
+    if (typeof value === "object" && value !== null) {
+        return JSON.stringify(value);
+    }
+
+    return value;
 }
+
+async function dynamicInsert(env, tableName, data) {
+    const columns = await getTableColumns(env, tableName);
+
+    const insertColumns = Object.keys(data)
+        .filter(key => columns.includes(key));
+
+    if (!insertColumns.length) {
+        throw new Error(
+            `Brak prawidłowych kolumn dla tabeli ${tableName}.`
+        );
+    }
+
+    const placeholders = insertColumns
+        .map(() => "?")
+        .join(", ");
+
+    const values = insertColumns.map(column =>
+        normalizeValue(data[column])
+    );
+
+    const sql = `
+        INSERT INTO ${tableName}
+        (${insertColumns.join(", ")})
+        VALUES (${placeholders})
+    `;
+
+    const result = await env.DB.prepare(sql)
+        .bind(...values)
+        .run();
+
+    return result;
+}
+
+async function dynamicUpdate(env, tableName, id, data) {
+    const columns = await getTableColumns(env, tableName);
+
+    const updateColumns = Object.keys(data)
+        .filter(key =>
+            columns.includes(key) &&
+            key !== "id"
+        );
+
+    if (!updateColumns.length) {
+        throw new Error(
+            `Brak pól do aktualizacji w tabeli ${tableName}.`
+        );
+    }
+
+    const assignments = updateColumns
+        .map(column => `${column} = ?`)
+        .join(", ");
+
+    const values = updateColumns.map(column =>
+        normalizeValue(data[column])
+    );
+
+    values.push(id);
+
+    const sql = `
+        UPDATE ${tableName}
+        SET ${assignments}
+        WHERE id = ?
+    `;
+
+    return await env.DB.prepare(sql)
+        .bind(...values)
+        .run();
+}
+
+const GENERIC_TABLES = {
+    players: "players",
+    news: "news",
+    matches: "matches",
+    recruitment: "recruitment",
+    achievements: "achievements",
+    recruitmentApplications: "recruitment_applications"
+};
 
 export default {
-  async fetch(request, env) {
-    try {
-      if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors(request) });
-      await ensureSchema(env);
-      const url = new URL(request.url);
-      const path = url.pathname.replace(/\/$/, "") || "/";
-      const method = request.method;
+    async fetch(request, env) {
+        try {
+            const url = new URL(request.url);
+            const parts = getPathParts(url);
+            const method = request.method.toUpperCase();
 
-      if (path === "/" && method === "GET") return ok({ message: "5DRAGONS API działa!" }, request);
-      if (path === "/api/test" && method === "GET") {
-        const tables = await env.DB.prepare(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`).all();
-        return ok({ message: "5DRAGONS API działa!", tables: tables.results || [] }, request);
-      }
+            if (method === "OPTIONS") {
+                return new Response(null, {
+                    status: 204,
+                    headers: corsHeaders(request)
+                });
+            }
 
-      if (path === "/api/register" && method === "POST") {
-        const d = await readJson(request);
-        const username = safeText(d?.username, 50);
-        const email = safeText(d?.email, 200).toLowerCase();
-        const password = String(d?.password || "");
-        if (!username || !email || password.length < 6) return fail("Podaj nazwę, email i hasło (min. 6 znaków).", request);
-        const exists = await env.DB.prepare(`SELECT id FROM users WHERE username=? OR email=?`).bind(username, email).first();
-        if (exists) return fail("Użytkownik już istnieje.", request, 409);
-        const result = await env.DB.prepare(`INSERT INTO users(username,email,password_hash,role) VALUES(?,?,?,?)`).bind(username,email,await hash(password),"user").run();
-        return ok({ id: result.meta?.last_row_id }, request, 201);
-      }
+            /*
+             * TEST API
+             */
+            if (method === "GET" && url.pathname === "/api/test") {
+                const tables = await env.DB.prepare(`
+                    SELECT name
+                    FROM sqlite_master
+                    WHERE type = 'table'
+                    ORDER BY name
+                `).all();
 
-      if (path === "/api/login" && method === "POST") {
-        const d = await readJson(request);
-        const login = safeText(d?.login || d?.username || d?.email, 200);
-        const password = String(d?.password || "");
-        const user = await env.DB.prepare(`SELECT * FROM users WHERE username=? OR email=?`).bind(login, login.toLowerCase()).first();
-        if (!user || user.password_hash !== await hash(password)) return fail("Nieprawidłowy login lub hasło.", request, 401);
-        const token = crypto.randomUUID() + crypto.randomUUID();
-        await env.DB.prepare(`INSERT INTO sessions(token,user_id,expires_at) VALUES(?,?,?)`).bind(token,user.id,Date.now()+1000*60*60*24*30).run();
-        return ok({ token, user: { id:user.id, username:user.username, email:user.email, role:user.role } }, request);
-      }
+                return json(request, {
+                    success: true,
+                    message: "5DRAGONS API działa!",
+                    tables: tables.results || []
+                });
+            }
 
-      if (path === "/api/me" && method === "GET") {
-        const user = await currentUser(env, request);
-        if (!user) return fail("Brak aktywnej sesji.", request, 401);
-        return ok({ user }, request);
-      }
+            /*
+             * REGISTER
+             *
+             * users:
+             * id
+             * email
+             * password_hash
+             * discord
+             * cs2_nick
+             * steam
+             * role
+             * team
+             * created_at
+             */
+            if (method === "POST" && url.pathname === "/api/register") {
+                const body = await readJson(request);
 
-      if (path === "/api/logout" && method === "POST") {
-        const auth = request.headers.get("Authorization") || "";
-        if (auth.startsWith("Bearer ")) await env.DB.prepare(`DELETE FROM sessions WHERE token=?`).bind(auth.slice(7)).run();
-        return ok({}, request);
-      }
+                if (!body) {
+                    return errorResponse(
+                        request,
+                        "Nieprawidłowe dane JSON."
+                    );
+                }
 
-      if (path === "/api/contact" && method === "POST") return await sendContact(env, await readJson(request) || {}, request);
+                const email = String(body.email || "")
+                    .trim()
+                    .toLowerCase();
 
-      if (path === "/api/recruitment" && method === "GET") return await list(env,"recruitment",request);
-      if ((path === "/api/recruitment" || path === "/api/recruitment/applications") && method === "POST") {
-        const d = await readJson(request);
-        if (!d) return fail("Nieprawidłowe dane JSON.", request);
-        return await insert(env,"recruitment",d,request);
-      }
+                const password = String(body.password || "");
 
-      const single = path.match(/^\/api\/(players|news|matches|recruitment|achievements)\/(\d+)$/);
-      if (single && method === "DELETE") return await remove(env,single[1],single[2],request);
-      const collection = path.match(/^\/api\/(players|news|matches|recruitment|achievements)$/);
-      if (collection && method === "GET") return await list(env,collection[1],request);
-      if (collection && method === "POST") {
-        const user = await currentUser(env,request);
-        const admin = requireAdmin(user,request);
-        if (admin) return admin;
-        return await insert(env,collection[1],await readJson(request) || {},request);
-      }
+                const discord = String(
+                    body.discord ||
+                    body.username ||
+                    ""
+                ).trim();
 
-      return fail("Nie znaleziono endpointu.", request, 404);
-    } catch (e) {
-      return fail(e?.message || "Błąd serwera.", request, 500);
+                const cs2Nick = String(
+                    body.cs2_nick ||
+                    body.nick ||
+                    ""
+                ).trim();
+
+                const steam = String(
+                    body.steam ||
+                    ""
+                ).trim();
+
+                if (!email || !password) {
+                    return errorResponse(
+                        request,
+                        "Email i hasło są wymagane."
+                    );
+                }
+
+                if (password.length < 6) {
+                    return errorResponse(
+                        request,
+                        "Hasło musi mieć minimum 6 znaków."
+                    );
+                }
+
+                const existing = await env.DB.prepare(`
+                    SELECT id
+                    FROM users
+                    WHERE email = ?
+                    LIMIT 1
+                `)
+                    .bind(email)
+                    .first();
+
+                if (existing) {
+                    return errorResponse(
+                        request,
+                        "Konto z tym adresem email już istnieje.",
+                        409
+                    );
+                }
+
+                const passwordHash = await sha256(password);
+
+                const result = await env.DB.prepare(`
+                    INSERT INTO users
+                    (
+                        email,
+                        password_hash,
+                        discord,
+                        cs2_nick,
+                        steam,
+                        role
+                    )
+                    VALUES (?, ?, ?, ?, ?, 'MEMBER')
+                `)
+                    .bind(
+                        email,
+                        passwordHash,
+                        discord || null,
+                        cs2Nick || null,
+                        steam || null
+                    )
+                    .run();
+
+                return json(request, {
+                    success: true,
+                    message: "Konto zostało utworzone.",
+                    user_id: result.meta.last_row_id
+                }, 201);
+            }
+
+            /*
+             * LOGIN
+             */
+            if (method === "POST" && url.pathname === "/api/login") {
+                const body = await readJson(request);
+
+                if (!body) {
+                    return errorResponse(
+                        request,
+                        "Nieprawidłowe dane JSON."
+                    );
+                }
+
+                const email = String(body.email || "")
+                    .trim()
+                    .toLowerCase();
+
+                const password = String(body.password || "");
+
+                if (!email || !password) {
+                    return errorResponse(
+                        request,
+                        "Email i hasło są wymagane."
+                    );
+                }
+
+                const passwordHash = await sha256(password);
+
+                const user = await env.DB.prepare(`
+                    SELECT
+                        id,
+                        email,
+                        discord,
+                        cs2_nick,
+                        steam,
+                        role,
+                        team,
+                        created_at
+                    FROM users
+                    WHERE email = ?
+                      AND password_hash = ?
+                    LIMIT 1
+                `)
+                    .bind(email, passwordHash)
+                    .first();
+
+                if (!user) {
+                    return errorResponse(
+                        request,
+                        "Nieprawidłowy email lub hasło.",
+                        401
+                    );
+                }
+
+                const token = generateToken();
+                const tokenHash = await sha256(token);
+
+                await env.DB.prepare(`
+                    INSERT INTO sessions
+                    (
+                        user_id,
+                        token_hash,
+                        expires_at
+                    )
+                    VALUES (
+                        ?,
+                        ?,
+                        datetime('now', '+30 days')
+                    )
+                `)
+                    .bind(user.id, tokenHash)
+                    .run();
+
+                return json(request, {
+                    success: true,
+                    token,
+                    user
+                });
+            }
+
+            /*
+             * ME
+             */
+            if (method === "GET" && url.pathname === "/api/me") {
+                const auth = await requireAuth(request, env);
+
+                if (!auth.ok) {
+                    return auth.response;
+                }
+
+                return json(request, {
+                    success: true,
+                    user: auth.user
+                });
+            }
+
+            /*
+             * LOGOUT
+             */
+            if (method === "POST" && url.pathname === "/api/logout") {
+                const authHeader = request.headers.get("Authorization");
+
+                if (authHeader?.startsWith("Bearer ")) {
+                    const token = authHeader
+                        .substring(7)
+                        .trim();
+
+                    if (token) {
+                        const tokenHash = await sha256(token);
+
+                        await env.DB.prepare(`
+                            DELETE FROM sessions
+                            WHERE token_hash = ?
+                        `)
+                            .bind(tokenHash)
+                            .run();
+                    }
+                }
+
+                return json(request, {
+                    success: true,
+                    message: "Wylogowano."
+                });
+            }
+
+            /*
+             * CONTACT
+             */
+            if (method === "POST" && url.pathname === "/api/contact") {
+                const body = await readJson(request);
+
+                if (!body) {
+                    return errorResponse(
+                        request,
+                        "Nieprawidłowe dane formularza."
+                    );
+                }
+
+                const name = String(body.name || "").trim();
+                const email = String(body.email || "").trim();
+                const subject = String(body.subject || "Kontakt 5DRAGONS").trim();
+                const message = String(body.message || "").trim();
+
+                if (!name || !email || !message) {
+                    return errorResponse(
+                        request,
+                        "Imię, email i wiadomość są wymagane."
+                    );
+                }
+
+                if (!env.RESEND_API_KEY) {
+                    return errorResponse(
+                        request,
+                        "Brak konfiguracji RESEND_API_KEY.",
+                        500
+                    );
+                }
+
+                const html = `
+                    <h2>Nowa wiadomość z formularza 5DRAGONS</h2>
+
+                    <p><strong>Imię:</strong> ${escapeHtml(name)}</p>
+                    <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+                    <p><strong>Temat:</strong> ${escapeHtml(subject)}</p>
+
+                    <hr>
+
+                    <p style="white-space:pre-wrap;">
+                        ${escapeHtml(message)}
+                    </p>
+                `;
+
+                const text = `
+Nowa wiadomość z formularza 5DRAGONS
+
+Imię: ${name}
+Email: ${email}
+Temat: ${subject}
+
+Wiadomość:
+${message}
+`;
+
+                const resendResponse = await fetch(
+                    "https://api.resend.com/emails",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            from: "5DRAGONS <onboarding@resend.dev>",
+                            to: ["matkosmo27@gmail.com"],
+                            reply_to: email,
+                            subject: `[5DRAGONS] ${subject}`,
+                            html,
+                            text
+                        })
+                    }
+                );
+
+                const resendData = await resendResponse.json();
+
+                if (!resendResponse.ok) {
+                    return errorResponse(
+                        request,
+                        resendData?.message ||
+                        "Nie udało się wysłać wiadomości.",
+                        500
+                    );
+                }
+
+                return json(request, {
+                    success: true,
+                    message: "Wiadomość została wysłana."
+                });
+            }
+
+            /*
+             * PLAYERS
+             */
+            if (parts[1] === "players") {
+                const id = getIdFromPath(parts);
+
+                if (method === "GET") {
+                    if (id) {
+                        const player = await env.DB.prepare(`
+                            SELECT *
+                            FROM players
+                            WHERE id = ?
+                            LIMIT 1
+                        `)
+                            .bind(id)
+                            .first();
+
+                        if (!player) {
+                            return errorResponse(
+                                request,
+                                "Nie znaleziono zawodnika.",
+                                404
+                            );
+                        }
+
+                        return json(request, {
+                            success: true,
+                            player
+                        });
+                    }
+
+                    const result = await env.DB.prepare(`
+                        SELECT *
+                        FROM players
+                        WHERE status = 'ACTIVE'
+                        ORDER BY id ASC
+                    `).all();
+
+                    return json(request, {
+                        success: true,
+                        players: result.results || []
+                    });
+                }
+
+                if (
+                    method === "POST" &&
+                    url.pathname === "/api/players"
+                ) {
+                    const admin = await requireAdmin(request, env);
+
+                    if (!admin.ok) {
+                        return admin.response;
+                    }
+
+                    const body = await readJson(request);
+
+                    if (!body) {
+                        return errorResponse(
+                            request,
+                            "Nieprawidłowe dane JSON."
+                        );
+                    }
+
+                    const result = await dynamicInsert(
+                        env,
+                        "players",
+                        body
+                    );
+
+                    return json(request, {
+                        success: true,
+                        message: "Zawodnik został dodany.",
+                        id: result.meta.last_row_id
+                    }, 201);
+                }
+
+                if (
+                    (method === "PATCH" || method === "PUT") &&
+                    id
+                ) {
+                    const admin = await requireAdmin(request, env);
+
+                    if (!admin.ok) {
+                        return admin.response;
+                    }
+
+                    const body = await readJson(request);
+
+                    if (!body) {
+                        return errorResponse(
+                            request,
+                            "Nieprawidłowe dane JSON."
+                        );
+                    }
+
+                    await dynamicUpdate(
+                        env,
+                        "players",
+                        id,
+                        body
+                    );
+
+                    return json(request, {
+                        success: true,
+                        message: "Zawodnik został zaktualizowany."
+                    });
+                }
+
+                if (method === "DELETE" && id) {
+                    const admin = await requireAdmin(request, env);
+
+                    if (!admin.ok) {
+                        return admin.response;
+                    }
+
+                    await env.DB.prepare(`
+                        UPDATE players
+                        SET status = 'INACTIVE'
+                        WHERE id = ?
+                    `)
+                        .bind(id)
+                        .run();
+
+                    return json(request, {
+                        success: true,
+                        message: "Zawodnik został ukryty."
+                    });
+                }
+            }
+
+            /*
+             * NEWS
+             */
+            if (parts[1] === "news") {
+                if (method === "GET") {
+                    const result = await env.DB.prepare(`
+                        SELECT *
+                        FROM news
+                        WHERE status = 'PUBLISHED'
+                        ORDER BY
+                            COALESCE(published_at, created_at) DESC,
+                            id DESC
+                    `).all();
+
+                    return json(request, {
+                        success: true,
+                        news: result.results || []
+                    });
+                }
+
+                if (
+                    method === "POST" &&
+                    url.pathname === "/api/news"
+                ) {
+                    const admin = await requireAdmin(request, env);
+
+                    if (!admin.ok) {
+                        return admin.response;
+                    }
+
+                    const body = await readJson(request);
+
+                    if (!body) {
+                        return errorResponse(
+                            request,
+                            "Nieprawidłowe dane JSON."
+                        );
+                    }
+
+                    const result = await dynamicInsert(
+                        env,
+                        "news",
+                        body
+                    );
+
+                    return json(request, {
+                        success: true,
+                        message: "News został dodany.",
+                        id: result.meta.last_row_id
+                    }, 201);
+                }
+            }
+
+            /*
+             * MATCHES
+             */
+            if (parts[1] === "matches") {
+                if (method === "GET") {
+                    const result = await env.DB.prepare(`
+                        SELECT *
+                        FROM matches
+                        ORDER BY date ASC, time ASC, id ASC
+                    `).all();
+
+                    return json(request, {
+                        success: true,
+                        matches: result.results || []
+                    });
+                }
+
+                if (
+                    method === "POST" &&
+                    url.pathname === "/api/matches"
+                ) {
+                    const admin = await requireAdmin(request, env);
+
+                    if (!admin.ok) {
+                        return admin.response;
+                    }
+
+                    const body = await readJson(request);
+
+                    if (!body) {
+                        return errorResponse(
+                            request,
+                            "Nieprawidłowe dane JSON."
+                        );
+                    }
+
+                    const result = await dynamicInsert(
+                        env,
+                        "matches",
+                        body
+                    );
+
+                    return json(request, {
+                        success: true,
+                        message: "Mecz został dodany.",
+                        id: result.meta.last_row_id
+                    }, 201);
+                }
+            }
+
+            /*
+             * RECRUITMENT
+             */
+            if (parts[1] === "recruitment") {
+                /*
+                 * PUBLIC LISTA REKRUTACJI
+                 */
+                if (
+                    method === "GET" &&
+                    url.pathname === "/api/recruitment"
+                ) {
+                    const result = await env.DB.prepare(`
+                        SELECT *
+                        FROM recruitment
+                        WHERE active = 1
+                        ORDER BY id DESC
+                    `).all();
+
+                    return json(request, {
+                        success: true,
+                        recruitment: result.results || []
+                    });
+                }
+
+                /*
+                 * ADMIN: DODAWANIE REKRUTACJI
+                 */
+                if (
+                    method === "POST" &&
+                    url.pathname === "/api/recruitment"
+                ) {
+                    const admin = await requireAdmin(request, env);
+
+                    if (!admin.ok) {
+                        return admin.response;
+                    }
+
+                    const body = await readJson(request);
+
+                    if (!body) {
+                        return errorResponse(
+                            request,
+                            "Nieprawidłowe dane JSON."
+                        );
+                    }
+
+                    const result = await dynamicInsert(
+                        env,
+                        "recruitment",
+                        body
+                    );
+
+                    return json(request, {
+                        success: true,
+                        message: "Ogłoszenie rekrutacyjne zostało dodane.",
+                        id: result.meta.last_row_id
+                    }, 201);
+                }
+
+                /*
+                 * ZGŁOSZENIE DO REKRUTACJI
+                 *
+                 * Frontend używa:
+                 * /api/recruitment/applications
+                 */
+                if (
+                    method === "POST" &&
+                    url.pathname === "/api/recruitment/applications"
+                ) {
+                    const body = await readJson(request);
+
+                    if (!body) {
+                        return errorResponse(
+                            request,
+                            "Nieprawidłowe dane formularza."
+                        );
+                    }
+
+                    const result = await dynamicInsert(
+                        env,
+                        "recruitment_applications",
+                        body
+                    );
+
+                    return json(request, {
+                        success: true,
+                        message: "Zgłoszenie zostało wysłane.",
+                        id: result.meta.last_row_id
+                    }, 201);
+                }
+
+                /*
+                 * ADMIN: LISTA ZGŁOSZEŃ
+                 */
+                if (
+                    method === "GET" &&
+                    url.pathname === "/api/recruitment/applications"
+                ) {
+                    const admin = await requireAdmin(request, env);
+
+                    if (!admin.ok) {
+                        return admin.response;
+                    }
+
+                    const result = await env.DB.prepare(`
+                        SELECT *
+                        FROM recruitment_applications
+                        ORDER BY id DESC
+                    `).all();
+
+                    return json(request, {
+                        success: true,
+                        applications: result.results || []
+                    });
+                }
+            }
+
+            /*
+             * ACHIEVEMENTS
+             */
+            if (parts[1] === "achievements") {
+                if (method === "GET") {
+                    const result = await env.DB.prepare(`
+                        SELECT *
+                        FROM achievements
+                        ORDER BY year DESC, id DESC
+                    `).all();
+
+                    return json(request, {
+                        success: true,
+                        achievements: result.results || []
+                    });
+                }
+
+                if (
+                    method === "POST" &&
+                    url.pathname === "/api/achievements"
+                ) {
+                    const admin = await requireAdmin(request, env);
+
+                    if (!admin.ok) {
+                        return admin.response;
+                    }
+
+                    const body = await readJson(request);
+
+                    if (!body) {
+                        return errorResponse(
+                            request,
+                            "Nieprawidłowe dane JSON."
+                        );
+                    }
+
+                    const result = await dynamicInsert(
+                        env,
+                        "achievements",
+                        body
+                    );
+
+                    return json(request, {
+                        success: true,
+                        message: "Osiągnięcie zostało dodane.",
+                        id: result.meta.last_row_id
+                    }, 201);
+                }
+            }
+
+            /*
+             * USERS
+             */
+            if (parts[1] === "users") {
+                const admin = await requireAdmin(request, env);
+
+                if (!admin.ok) {
+                    return admin.response;
+                }
+
+                if (
+                    method === "GET" &&
+                    url.pathname === "/api/users"
+                ) {
+                    const result = await env.DB.prepare(`
+                        SELECT
+                            id,
+                            email,
+                            discord,
+                            cs2_nick,
+                            steam,
+                            role,
+                            team,
+                            created_at
+                        FROM users
+                        ORDER BY id DESC
+                    `).all();
+
+                    return json(request, {
+                        success: true,
+                        users: result.results || []
+                    });
+                }
+
+                if (
+                    method === "PATCH" &&
+                    parts.length === 3
+                ) {
+                    const id = getIdFromPath(parts);
+
+                    if (!id) {
+                        return errorResponse(
+                            request,
+                            "Nieprawidłowe ID użytkownika."
+                        );
+                    }
+
+                    const body = await readJson(request);
+
+                    if (!body) {
+                        return errorResponse(
+                            request,
+                            "Nieprawidłowe dane JSON."
+                        );
+                    }
+
+                    const allowed = [
+                        "discord",
+                        "cs2_nick",
+                        "steam",
+                        "role",
+                        "team"
+                    ];
+
+                    const updateData = {};
+
+                    for (const key of allowed) {
+                        if (Object.prototype.hasOwnProperty.call(body, key)) {
+                            updateData[key] = body[key];
+                        }
+                    }
+
+                    if (!Object.keys(updateData).length) {
+                        return errorResponse(
+                            request,
+                            "Brak pól do aktualizacji."
+                        );
+                    }
+
+                    await dynamicUpdate(
+                        env,
+                        "users",
+                        id,
+                        updateData
+                    );
+
+                    return json(request, {
+                        success: true,
+                        message: "Użytkownik został zaktualizowany."
+                    });
+                }
+            }
+
+            /*
+             * ROOT
+             */
+            if (url.pathname === "/") {
+                return json(request, {
+                    success: false,
+                    error: "Nie znaleziono endpointu."
+                }, 404);
+            }
+
+            return errorResponse(
+                request,
+                "Nie znaleziono endpointu.",
+                404
+            );
+
+        } catch (error) {
+            console.error(error);
+
+            return json(request, {
+                success: false,
+                error: error?.message ||
+                    "Wewnętrzny błąd serwera."
+            }, 500);
+        }
     }
-  }
 };
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
