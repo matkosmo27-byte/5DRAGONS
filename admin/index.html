@@ -1,1 +1,2237 @@
-<!doctype html><html lang="pl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>5DRAGONS Academy</title><link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/animations.css"></head><body><div data-nav-root></div><div class="admin-nav"><div class="container nav-inner"><a class="brand" href="index.html">5<span>DRAGONS</span> ADMIN</a><a class="btn" href="../index.html">SITE</a></div></div><main class="dashboard"><div class="container"><span class="tag">ADMIN PANEL</span><h1>INDEX</h1><div class="card"><h3>Index</h3><p class="muted">Panel administracyjny 5DRAGONS. Dane są obsługiwane przez Cloudflare Worker i D1.</p><div class="table-wrap"><table class="table"><thead><tr><th>ID</th><th>Info</th><th>Status</th></tr></thead><tbody><tr><td>—</td><td>Połączono z API</td><td>READY</td></tr></tbody></table></div></div></div></main><div data-footer></div><script src="../js/main.js"></script></body></html>
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>5DRAGONS | Admin Panel</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #070b0a;
+            --panel: #0d1311;
+            --panel2: #111916;
+            --border: #1e2a25;
+            --green: #20d879;
+            --green2: #16a85d;
+            --text: #f1f5f3;
+            --muted: #8b9892;
+            --danger: #ff4d5e;
+            --warning: #f0b84b;
+        }
+
+        body {
+            margin: 0;
+            background:
+                radial-gradient(
+                    circle at top right,
+                    rgba(32, 216, 121, .08),
+                    transparent 35%
+                ),
+                var(--bg);
+            color: var(--text);
+            font-family:
+                Inter,
+                Arial,
+                Helvetica,
+                sans-serif;
+        }
+
+        button,
+        input,
+        textarea,
+        select {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .app {
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* SIDEBAR */
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: #090e0c;
+            border-right: 1px solid var(--border);
+            padding: 24px 16px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 20;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 10px 26px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            font-size: 20px;
+        }
+
+        .brand img {
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
+        }
+
+        .brand span span {
+            color: var(--green);
+        }
+
+        .sidebar-label {
+            color: #58655f;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            padding: 12px 12px 7px;
+            text-transform: uppercase;
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .menu button {
+            width: 100%;
+            text-align: left;
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            padding: 12px 13px;
+            border-radius: 9px;
+            transition: .2s;
+        }
+
+        .menu button:hover {
+            background: #111a16;
+            color: white;
+        }
+
+        .menu button.active {
+            background: rgba(32, 216, 121, .12);
+            color: var(--green);
+        }
+
+        .sidebar-bottom {
+            position: absolute;
+            left: 16px;
+            right: 16px;
+            bottom: 18px;
+        }
+
+        /* MAIN */
+
+        .main {
+            margin-left: 250px;
+            width: calc(100% - 250px);
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 76px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            background: rgba(7, 11, 10, .9);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(12px);
+        }
+
+        .topbar h1 {
+            margin: 0;
+            font-size: 21px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .role {
+            color: var(--green);
+            background: rgba(32, 216, 121, .1);
+            border: 1px solid rgba(32, 216, 121, .2);
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .content {
+            padding: 30px;
+            max-width: 1500px;
+        }
+
+        /* CARDS */
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 26px;
+        }
+
+        .stat-card,
+        .panel {
+            background: linear-gradient(
+                145deg,
+                var(--panel2),
+                var(--panel)
+            );
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .stat-card {
+            padding: 20px;
+        }
+
+        .stat-card .label {
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+        }
+
+        .stat-card .value {
+            margin-top: 8px;
+            font-size: 32px;
+            font-weight: 900;
+        }
+
+        .panel {
+            padding: 22px;
+            margin-bottom: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        /* BUTTONS */
+
+        .btn {
+            border: 0;
+            border-radius: 8px;
+            padding: 10px 15px;
+            background: var(--green);
+            color: #041009;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #35ed8c;
+        }
+
+        .btn.secondary {
+            background: #18221e;
+            color: white;
+            border: 1px solid var(--border);
+        }
+
+        .btn.danger {
+            background: rgba(255, 77, 94, .12);
+            color: #ff7a87;
+            border: 1px solid rgba(255, 77, 94, .25);
+        }
+
+        .btn.small {
+            padding: 7px 10px;
+            font-size: 12px;
+        }
+
+        /* TABLE */
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            color: #6f7d76;
+            font-size: 11px;
+            text-transform: uppercase;
+            text-align: left;
+            letter-spacing: .8px;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 13px 12px;
+            border-bottom: 1px solid #17201c;
+            color: #dce3df;
+            font-size: 13px;
+        }
+
+        tr:hover td {
+            background: rgba(255,255,255,.015);
+        }
+
+        /* FORMS */
+
+        .form-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .field label {
+            color: #9ba8a1;
+            font-size: 12px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            border: 1px solid var(--border);
+            background: #080d0b;
+            color: white;
+            border-radius: 8px;
+            padding: 11px 12px;
+            outline: none;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: rgba(32,216,121,.55);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            margin-top: 18px;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* PAGES */
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .empty {
+            padding: 35px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .message {
+            margin-top: 12px;
+            padding: 11px 13px;
+            border-radius: 8px;
+            background: rgba(32,216,121,.08);
+            color: var(--green);
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .error {
+            color: #ff7a87;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #18221e;
+            color: #b8c4bd;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        /* MOBILE */
+
+        @media (max-width: 900px) {
+
+            .sidebar {
+                width: 70px;
+                padding: 16px 8px;
+            }
+
+            .brand span,
+            .sidebar-label,
+            .menu button span,
+            .sidebar-bottom .btn span {
+                display: none;
+            }
+
+            .brand {
+                justify-content: center;
+                padding-bottom: 20px;
+            }
+
+            .main {
+                margin-left: 70px;
+                width: calc(100% - 70px);
+            }
+
+            .stats-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 600px) {
+
+            .topbar {
+                padding: 0 16px;
+            }
+
+            .content {
+                padding: 14px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .field.full {
+                grid-column: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="loading" style="
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#8b9892;
+">
+    Sprawdzanie uprawnień...
+</div>
+
+<div id="denied" class="hidden" style="
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:30px;
+">
+    <div>
+        <h1>Brak dostępu</h1>
+        <p class="muted">
+            To konto nie posiada uprawnień do panelu administracyjnego.
+        </p>
+        <a
+            href="../index.html"
+            style="color:#20d879;"
+        >
+            Wróć na stronę
+        </a>
+    </div>
+</div>
+
+
+<div id="app" class="app hidden">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            <img src="../assets/logo.png" alt="5DRAGONS">
+            <span>
+                5<span>DRAGONS</span>
+            </span>
+        </div>
+
+        <div class="sidebar-label">
+            PANEL
+        </div>
+
+        <nav class="menu">
+
+            <button
+                class="active"
+                data-page="dashboard"
+            >
+                📊 <span>Dashboard</span>
+            </button>
+
+            <button data-page="players">
+                👤 <span>Zawodnicy</span>
+            </button>
+
+            <button data-page="matches">
+                🎮 <span>Mecze</span>
+            </button>
+
+            <button data-page="news">
+                📰 <span>News</span>
+            </button>
+
+            <button data-page="recruitment">
+                📋 <span>Rekrutacja</span>
+            </button>
+
+            <button data-page="users">
+                👥 <span>Użytkownicy</span>
+            </button>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <button
+                id="logoutBtn"
+                class="btn danger"
+                style="width:100%;"
+            >
+                🚪 <span>Wyloguj</span>
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN -->
+
+    <main class="main">
+
+        <header class="topbar">
+
+            <h1 id="pageTitle">
+                Dashboard
+            </h1>
+
+            <div class="user-info">
+
+                <span id="currentUser">
+                    -
+                </span>
+
+                <span
+                    id="currentRole"
+                    class="role"
+                >
+                    -
+                </span>
+
+            </div>
+
+        </header>
+
+
+        <div class="content">
+
+
+            <!-- DASHBOARD -->
+
+            <section
+                class="page active"
+                id="page-dashboard"
+            >
+
+                <div class="stats-grid">
+
+                    <div class="stat-card">
+                        <div class="label">
+                            Zawodnicy
+                        </div>
+                        <div
+                            class="value"
+                            id="statPlayers"
+                        >
+                            0
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="label">
+                            Mecze
+                        </div>
+                        <div
+                            class="value"
+                            id="statMatches"
+                        >
+                            0
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="label">
+                            News
+                        </div>
+                        <div
+                            class="value"
+                            id="statNews"
+                        >
+                            0
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="label">
+                            Użytkownicy
+                        </div>
+                        <div
+                            class="value"
+                            id="statUsers"
+                        >
+                            0
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <h2>
+                                5DRAGONS Admin Panel
+                            </h2>
+
+                            <p class="muted">
+                                Zarządzaj zawartością akademii
+                                z jednego miejsca.
+                            </p>
+                        </div>
+
+                        <button
+                            class="btn secondary"
+                            onclick="loadAll()"
+                        >
+                            ↻ Odśwież
+                        </button>
+
+                    </div>
+
+                    <div class="muted">
+                        Zalogowany jako:
+                        <strong id="dashboardUser">
+                            -
+                        </strong>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- PLAYERS -->
+
+            <section
+                class="page"
+                id="page-players"
+            >
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <h2>
+                            Dodaj zawodnika
+                        </h2>
+                    </div>
+
+                    <form id="playerForm">
+
+                        <div class="form-grid">
+
+                            <div class="field">
+                                <label>Nick</label>
+                                <input
+                                    name="nick"
+                                    required
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>Imię i nazwisko</label>
+                                <input
+                                    name="name"
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>Rola</label>
+                                <select name="role">
+                                    <option>RIFLER</option>
+                                    <option>AWPer</option>
+                                    <option>ENTRY</option>
+                                    <option>SUPPORT</option>
+                                    <option>IGL</option>
+                                    <option>COACH</option>
+                                </select>
+                            </div>
+
+                            <div class="field">
+                                <label>Team</label>
+                                <select name="team">
+                                    <option value="MAIN">
+                                        MAIN
+                                    </option>
+                                    <option value="ACADEMY">
+                                        ACADEMY
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="field">
+                                <label>FACEIT Level</label>
+                                <input
+                                    name="faceit_level"
+                                    type="number"
+                                    min="0"
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>FACEIT Elo</label>
+                                <input
+                                    name="faceit_elo"
+                                    type="number"
+                                    min="0"
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>FACEIT URL</label>
+                                <input
+                                    name="faceit_url"
+                                    type="url"
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>Steam URL</label>
+                                <input
+                                    name="steam_url"
+                                    type="url"
+                                >
+                            </div>
+
+                            <div class="field full">
+                                <label>Zdjęcie URL</label>
+                                <input
+                                    name="photo"
+                                    type="url"
+                                >
+                            </div>
+
+                            <div class="field full">
+                                <label>Opis</label>
+                                <textarea
+                                    name="description"
+                                ></textarea>
+                            </div>
+
+                        </div>
+
+                        <div class="form-actions">
+
+                            <button
+                                class="btn"
+                                type="submit"
+                            >
+                                + Dodaj zawodnika
+                            </button>
+
+                        </div>
+
+                        <div
+                            id="playerMessage"
+                            class="message"
+                        ></div>
+
+                    </form>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <h2>
+                            Zawodnicy
+                        </h2>
+                    </div>
+
+                    <div
+                        id="playersTable"
+                        class="table-wrap"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- MATCHES -->
+
+            <section
+                class="page"
+                id="page-matches"
+            >
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <h2>
+                            Dodaj mecz
+                        </h2>
+                    </div>
+
+                    <form id="matchForm">
+
+                        <div class="form-grid">
+
+                            <div class="field">
+                                <label>Przeciwnik</label>
+                                <input
+                                    name="opponent"
+                                    required
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>Data</label>
+                                <input
+                                    name="date"
+                                    type="date"
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>Godzina</label>
+                                <input
+                                    name="time"
+                                    type="time"
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>Rozgrywki</label>
+                                <input
+                                    name="competition"
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>Mapa</label>
+                                <input
+                                    name="map"
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>Format</label>
+                                <select name="format">
+                                    <option>BO1</option>
+                                    <option>BO3</option>
+                                    <option>BO5</option>
+                                </select>
+                            </div>
+
+                            <div class="field">
+                                <label>Status</label>
+                                <select name="status">
+                                    <option>UPCOMING</option>
+                                    <option>LIVE</option>
+                                    <option>FINISHED</option>
+                                </select>
+                            </div>
+
+                            <div class="field">
+                                <label>Stream URL</label>
+                                <input
+                                    name="stream_url"
+                                    type="url"
+                                >
+                            </div>
+
+                        </div>
+
+                        <div class="form-actions">
+
+                            <button
+                                class="btn"
+                                type="submit"
+                            >
+                                + Dodaj mecz
+                            </button>
+
+                        </div>
+
+                        <div
+                            id="matchMessage"
+                            class="message"
+                        ></div>
+
+                    </form>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <h2>
+                            Mecze
+                        </h2>
+                    </div>
+
+                    <div
+                        id="matchesTable"
+                        class="table-wrap"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- NEWS -->
+
+            <section
+                class="page"
+                id="page-news"
+            >
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <h2>
+                            Dodaj news
+                        </h2>
+                    </div>
+
+                    <form id="newsForm">
+
+                        <div class="form-grid">
+
+                            <div class="field full">
+                                <label>Tytuł</label>
+                                <input
+                                    name="title"
+                                    required
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>Kategoria</label>
+                                <select name="category">
+                                    <option>NEWS</option>
+                                    <option>TEAM</option>
+                                    <option>ACADEMY</option>
+                                    <option>RESULT</option>
+                                    <option>ANNOUNCEMENT</option>
+                                </select>
+                            </div>
+
+                            <div class="field">
+                                <label>Status</label>
+                                <select name="status">
+                                    <option value="PUBLISHED">
+                                        PUBLISHED
+                                    </option>
+                                    <option value="DRAFT">
+                                        DRAFT
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="field full">
+                                <label>Krótki opis</label>
+                                <textarea
+                                    name="excerpt"
+                                    style="min-height:80px"
+                                ></textarea>
+                            </div>
+
+                            <div class="field full">
+                                <label>Treść</label>
+                                <textarea
+                                    name="content"
+                                    required
+                                    style="min-height:220px"
+                                ></textarea>
+                            </div>
+
+                            <div class="field">
+                                <label>Obrazek URL</label>
+                                <input
+                                    name="image"
+                                    type="url"
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label>Autor</label>
+                                <input
+                                    name="author"
+                                    id="newsAuthor"
+                                >
+                            </div>
+
+                        </div>
+
+                        <div class="form-actions">
+
+                            <button
+                                class="btn"
+                                type="submit"
+                            >
+                                + Opublikuj news
+                            </button>
+
+                        </div>
+
+                        <div
+                            id="newsMessage"
+                            class="message"
+                        ></div>
+
+                    </form>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <h2>
+                            Opublikowane newsy
+                        </h2>
+                    </div>
+
+                    <div
+                        id="newsTable"
+                        class="table-wrap"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- RECRUITMENT -->
+
+            <section
+                class="page"
+                id="page-recruitment"
+            >
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <h2>
+                            Zgłoszenia rekrutacyjne
+                        </h2>
+                    </div>
+
+                    <div
+                        id="applicationsTable"
+                        class="table-wrap"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- USERS -->
+
+            <section
+                class="page"
+                id="page-users"
+            >
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <h2>
+                            Użytkownicy
+                        </h2>
+                    </div>
+
+                    <div
+                        id="usersTable"
+                        class="table-wrap"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<script>
+
+const API_URL =
+    'https://calm-sunset-b06e.matkosmo27.workers.dev';
+
+const token =
+    localStorage.getItem('5d_token');
+
+
+/* =========================================================
+   API
+========================================================= */
+
+async function api(path, options = {}) {
+
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+    };
+
+    if (token) {
+        headers.Authorization =
+            `Bearer ${token}`;
+    }
+
+    const response =
+        await fetch(API_URL + path, {
+            ...options,
+            headers
+        });
+
+    let data = {};
+
+    try {
+        data = await response.json();
+    } catch {}
+
+    if (!response.ok || data.success === false) {
+        throw new Error(
+            data.error || 'Błąd API.'
+        );
+    }
+
+    return data;
+}
+
+
+/* =========================================================
+   ESCAPE
+========================================================= */
+
+function esc(value) {
+
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+
+/* =========================================================
+   AUTH
+========================================================= */
+
+let currentUser = null;
+
+async function checkAuth() {
+
+    if (!token) {
+        showDenied();
+        return;
+    }
+
+    try {
+
+        const data =
+            await api('/api/me');
+
+        currentUser =
+            data.user;
+
+        const allowedRoles = [
+            'OWNER',
+            'ADMIN',
+            'MANAGER',
+            'COACH',
+            'EDITOR'
+        ];
+
+        if (
+            !allowedRoles.includes(
+                currentUser.role
+            )
+        ) {
+            showDenied();
+            return;
+        }
+
+        document
+            .getElementById('loading')
+            .classList.add('hidden');
+
+        document
+            .getElementById('app')
+            .classList.remove('hidden');
+
+        document
+            .getElementById('currentUser')
+            .textContent =
+                currentUser.cs2_nick ||
+                currentUser.discord ||
+                currentUser.email;
+
+        document
+            .getElementById('currentRole')
+            .textContent =
+                currentUser.role;
+
+        document
+            .getElementById('dashboardUser')
+            .textContent =
+                currentUser.email;
+
+        document
+            .getElementById('newsAuthor')
+            .value =
+                currentUser.cs2_nick ||
+                currentUser.discord ||
+                currentUser.email;
+
+        await loadAll();
+
+    } catch (error) {
+
+        console.error(error);
+        showDenied();
+    }
+}
+
+
+function showDenied() {
+
+    document
+        .getElementById('loading')
+        .classList.add('hidden');
+
+    document
+        .getElementById('denied')
+        .classList.remove('hidden');
+}
+
+
+/* =========================================================
+   NAV
+========================================================= */
+
+const pageTitles = {
+    dashboard: 'Dashboard',
+    players: 'Zawodnicy',
+    matches: 'Mecze',
+    news: 'News',
+    recruitment: 'Rekrutacja',
+    users: 'Użytkownicy'
+};
+
+
+document
+    .querySelectorAll('.menu button')
+    .forEach(button => {
+
+        button.addEventListener(
+            'click',
+            () => {
+
+                const page =
+                    button.dataset.page;
+
+                document
+                    .querySelectorAll('.menu button')
+                    .forEach(item =>
+                        item.classList.remove('active')
+                    );
+
+                button.classList.add('active');
+
+                document
+                    .querySelectorAll('.page')
+                    .forEach(section =>
+                        section.classList.remove('active')
+                    );
+
+                document
+                    .getElementById(
+                        `page-${page}`
+                    )
+                    .classList.add('active');
+
+                document
+                    .getElementById('pageTitle')
+                    .textContent =
+                        pageTitles[page] ||
+                        'Dashboard';
+            }
+        );
+    });
+
+
+/* =========================================================
+   LOAD ALL
+========================================================= */
+
+async function loadAll() {
+
+    await Promise.allSettled([
+        loadPlayers(),
+        loadMatches(),
+        loadNews(),
+        loadApplications(),
+        loadUsers()
+    ]);
+}
+
+
+/* =========================================================
+   PLAYERS
+========================================================= */
+
+let players = [];
+
+async function loadPlayers() {
+
+    try {
+
+        const data =
+            await api('/api/players');
+
+        players =
+            Array.isArray(data.players)
+                ? data.players
+                : [];
+
+        document
+            .getElementById('statPlayers')
+            .textContent =
+                players.length;
+
+        const table =
+            document.getElementById(
+                'playersTable'
+            );
+
+        if (!players.length) {
+
+            table.innerHTML =
+                '<div class="empty">Brak zawodników.</div>';
+
+            return;
+        }
+
+        table.innerHTML = `
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nick</th>
+                        <th>Rola</th>
+                        <th>Team</th>
+                        <th>FACEIT</th>
+                        <th>ELO</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    ${players.map(player => `
+
+                        <tr>
+
+                            <td>${esc(player.id)}</td>
+
+                            <td>
+                                <strong>
+                                    ${esc(player.nick)}
+                                </strong>
+                            </td>
+
+                            <td>
+                                ${esc(player.role)}
+                            </td>
+
+                            <td>
+                                ${esc(player.team)}
+                            </td>
+
+                            <td>
+                                ${esc(player.faceit_level || 0)}
+                            </td>
+
+                            <td>
+                                ${esc(player.faceit_elo || 0)}
+                            </td>
+
+                            <td>
+                                <span class="badge">
+                                    ${esc(player.status)}
+                                </span>
+                            </td>
+
+                            <td>
+                                ${
+                                    player.status === 'ACTIVE'
+                                    ? `
+                                        <button
+                                            class="btn danger small"
+                                            onclick="deletePlayer(${player.id})"
+                                        >
+                                            Usuń
+                                        </button>
+                                    `
+                                    : ''
+                                }
+                            </td>
+
+                        </tr>
+
+                    `).join('')}
+
+                </tbody>
+
+            </table>
+        `;
+
+    } catch (error) {
+
+        document
+            .getElementById('playersTable')
+            .innerHTML =
+                `<div class="empty error">
+                    ${esc(error.message)}
+                </div>`;
+    }
+}
+
+
+async function deletePlayer(id) {
+
+    if (!confirm(
+        'Czy na pewno chcesz ukryć tego zawodnika?'
+    )) {
+        return;
+    }
+
+    try {
+
+        await api(`/api/players/${id}`, {
+            method: 'DELETE'
+        });
+
+        await loadPlayers();
+
+    } catch (error) {
+
+        alert(error.message);
+    }
+}
+
+
+document
+    .getElementById('playerForm')
+    .addEventListener('submit', async event => {
+
+        event.preventDefault();
+
+        const form =
+            event.target;
+
+        const data =
+            Object.fromEntries(
+                new FormData(form).entries()
+            );
+
+        data.faceit_level =
+            data.faceit_level
+                ? Number(data.faceit_level)
+                : null;
+
+        data.faceit_elo =
+            data.faceit_elo
+                ? Number(data.faceit_elo)
+                : 0;
+
+        data.status = 'ACTIVE';
+
+        try {
+
+            await api('/api/players', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+
+            form.reset();
+
+            showMessage(
+                'playerMessage',
+                'Zawodnik został dodany.'
+            );
+
+            await loadPlayers();
+
+        } catch (error) {
+
+            showMessage(
+                'playerMessage',
+                error.message,
+                true
+            );
+        }
+    });
+
+
+/* =========================================================
+   MATCHES
+========================================================= */
+
+async function loadMatches() {
+
+    try {
+
+        const data =
+            await api('/api/matches');
+
+        const matches =
+            Array.isArray(data.matches)
+                ? data.matches
+                : [];
+
+        document
+            .getElementById('statMatches')
+            .textContent =
+                matches.length;
+
+        const table =
+            document.getElementById(
+                'matchesTable'
+            );
+
+        if (!matches.length) {
+
+            table.innerHTML =
+                '<div class="empty">Brak meczów.</div>';
+
+            return;
+        }
+
+        table.innerHTML = `
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Przeciwnik</th>
+                        <th>Data</th>
+                        <th>Rozgrywki</th>
+                        <th>Mapa</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    ${matches.map(match => `
+
+                        <tr>
+
+                            <td>${esc(match.id)}</td>
+
+                            <td>
+                                <strong>
+                                    5DRAGONS
+                                </strong>
+                                vs
+                                ${esc(match.opponent)}
+                            </td>
+
+                            <td>
+                                ${esc(match.date)}
+                                ${esc(match.time)}
+                            </td>
+
+                            <td>
+                                ${esc(match.competition)}
+                            </td>
+
+                            <td>
+                                ${esc(match.map)}
+                            </td>
+
+                            <td>
+                                <span class="badge">
+                                    ${esc(match.status)}
+                                </span>
+                            </td>
+
+                        </tr>
+
+                    `).join('')}
+
+                </tbody>
+
+            </table>
+        `;
+
+    } catch (error) {
+
+        document
+            .getElementById('matchesTable')
+            .innerHTML =
+                `<div class="empty error">
+                    ${esc(error.message)}
+                </div>`;
+    }
+}
+
+
+document
+    .getElementById('matchForm')
+    .addEventListener('submit', async event => {
+
+        event.preventDefault();
+
+        const form =
+            event.target;
+
+        const data =
+            Object.fromEntries(
+                new FormData(form).entries()
+            );
+
+        data.our_score = null;
+        data.opponent_score = null;
+
+        try {
+
+            await api('/api/matches', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+
+            form.reset();
+
+            showMessage(
+                'matchMessage',
+                'Mecz został dodany.'
+            );
+
+            await loadMatches();
+
+        } catch (error) {
+
+            showMessage(
+                'matchMessage',
+                error.message,
+                true
+            );
+        }
+    });
+
+
+/* =========================================================
+   NEWS
+========================================================= */
+
+async function loadNews() {
+
+    try {
+
+        const data =
+            await api('/api/news');
+
+        const news =
+            Array.isArray(data.news)
+                ? data.news
+                : [];
+
+        document
+            .getElementById('statNews')
+            .textContent =
+                news.length;
+
+        const table =
+            document.getElementById(
+                'newsTable'
+            );
+
+        if (!news.length) {
+
+            table.innerHTML =
+                '<div class="empty">Brak newsów.</div>';
+
+            return;
+        }
+
+        table.innerHTML = `
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tytuł</th>
+                        <th>Kategoria</th>
+                        <th>Autor</th>
+                        <th>Status</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    ${news.map(item => `
+
+                        <tr>
+
+                            <td>${esc(item.id)}</td>
+
+                            <td>
+                                <strong>
+                                    ${esc(item.title)}
+                                </strong>
+                            </td>
+
+                            <td>
+                                ${esc(item.category)}
+                            </td>
+
+                            <td>
+                                ${esc(item.author)}
+                            </td>
+
+                            <td>
+                                <span class="badge">
+                                    ${esc(item.status)}
+                                </span>
+                            </td>
+
+                            <td>
+                                ${esc(item.created_at)}
+                            </td>
+
+                        </tr>
+
+                    `).join('')}
+
+                </tbody>
+
+            </table>
+        `;
+
+    } catch (error) {
+
+        document
+            .getElementById('newsTable')
+            .innerHTML =
+                `<div class="empty error">
+                    ${esc(error.message)}
+                </div>`;
+    }
+}
+
+
+document
+    .getElementById('newsForm')
+    .addEventListener('submit', async event => {
+
+        event.preventDefault();
+
+        const form =
+            event.target;
+
+        const data =
+            Object.fromEntries(
+                new FormData(form).entries()
+            );
+
+        data.published_at =
+            data.status === 'PUBLISHED'
+                ? new Date().toISOString()
+                : null;
+
+        try {
+
+            await api('/api/news', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+
+            form.reset();
+
+            document
+                .getElementById('newsAuthor')
+                .value =
+                    currentUser?.cs2_nick ||
+                    currentUser?.discord ||
+                    currentUser?.email ||
+                    '';
+
+            showMessage(
+                'newsMessage',
+                'News został dodany.'
+            );
+
+            await loadNews();
+
+        } catch (error) {
+
+            showMessage(
+                'newsMessage',
+                error.message,
+                true
+            );
+        }
+    });
+
+
+/* =========================================================
+   APPLICATIONS
+========================================================= */
+
+async function loadApplications() {
+
+    try {
+
+        const data =
+            await api(
+                '/api/recruitment/applications'
+            );
+
+        const applications =
+            Array.isArray(data.applications)
+                ? data.applications
+                : [];
+
+        const table =
+            document.getElementById(
+                'applicationsTable'
+            );
+
+        if (!applications.length) {
+
+            table.innerHTML =
+                '<div class="empty">Brak zgłoszeń.</div>';
+
+            return;
+        }
+
+        const columns =
+            Object.keys(applications[0]);
+
+        table.innerHTML = `
+            <table>
+
+                <thead>
+                    <tr>
+                        ${columns.map(column => `
+                            <th>
+                                ${esc(column)}
+                            </th>
+                        `).join('')}
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    ${applications.map(application => `
+
+                        <tr>
+
+                            ${columns.map(column => `
+                                <td>
+                                    ${esc(
+                                        application[column]
+                                    )}
+                                </td>
+                            `).join('')}
+
+                        </tr>
+
+                    `).join('')}
+
+                </tbody>
+
+            </table>
+        `;
+
+    } catch (error) {
+
+        document
+            .getElementById('applicationsTable')
+            .innerHTML =
+                `<div class="empty error">
+                    ${esc(error.message)}
+                </div>`;
+    }
+}
+
+
+/* =========================================================
+   USERS
+========================================================= */
+
+async function loadUsers() {
+
+    try {
+
+        const data =
+            await api('/api/users');
+
+        const users =
+            Array.isArray(data.users)
+                ? data.users
+                : [];
+
+        document
+            .getElementById('statUsers')
+            .textContent =
+                users.length;
+
+        const table =
+            document.getElementById(
+                'usersTable'
+            );
+
+        if (!users.length) {
+
+            table.innerHTML =
+                '<div class="empty">Brak użytkowników.</div>';
+
+            return;
+        }
+
+        table.innerHTML = `
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Discord</th>
+                        <th>CS2</th>
+                        <th>Rola</th>
+                        <th>Team</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    ${users.map(user => `
+
+                        <tr>
+
+                            <td>
+                                ${esc(user.id)}
+                            </td>
+
+                            <td>
+                                ${esc(user.email)}
+                            </td>
+
+                            <td>
+                                ${esc(user.discord)}
+                            </td>
+
+                            <td>
+                                ${esc(user.cs2_nick)}
+                            </td>
+
+                            <td>
+
+                                <select
+                                    id="role-${user.id}"
+                                >
+
+                                    ${[
+                                        'MEMBER',
+                                        'EDITOR',
+                                        'COACH',
+                                        'MANAGER',
+                                        'ADMIN',
+                                        'OWNER'
+                                    ].map(role => `
+                                        <option
+                                            value="${role}"
+                                            ${
+                                                user.role === role
+                                                    ? 'selected'
+                                                    : ''
+                                            }
+                                        >
+                                            ${role}
+                                        </option>
+                                    `).join('')}
+
+                                </select>
+
+                            </td>
+
+                            <td>
+
+                                <select
+                                    id="team-${user.id}"
+                                >
+
+                                    <option
+                                        value=""
+                                        ${
+                                            !user.team
+                                                ? 'selected'
+                                                : ''
+                                        }
+                                    >
+                                        —
+                                    </option>
+
+                                    <option
+                                        value="MAIN"
+                                        ${
+                                            user.team === 'MAIN'
+                                                ? 'selected'
+                                                : ''
+                                        }
+                                    >
+                                        MAIN
+                                    </option>
+
+                                    <option
+                                        value="ACADEMY"
+                                        ${
+                                            user.team === 'ACADEMY'
+                                                ? 'selected'
+                                                : ''
+                                        }
+                                    >
+                                        ACADEMY
+                                    </option>
+
+                                </select>
+
+                            </td>
+
+                            <td>
+
+                                <button
+                                    class="btn small"
+                                    onclick="saveUser(${user.id})"
+                                >
+                                    Zapisz
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    `).join('')}
+
+                </tbody>
+
+            </table>
+        `;
+
+    } catch (error) {
+
+        document
+            .getElementById('usersTable')
+            .innerHTML =
+                `<div class="empty error">
+                    ${esc(error.message)}
+                </div>`;
+    }
+}
+
+
+async function saveUser(id) {
+
+    const role =
+        document.getElementById(
+            `role-${id}`
+        ).value;
+
+    const team =
+        document.getElementById(
+            `team-${id}`
+        ).value;
+
+    try {
+
+        await api(`/api/users/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                role,
+                team: team || null
+            })
+        });
+
+        alert(
+            'Użytkownik został zaktualizowany.'
+        );
+
+        await loadUsers();
+
+    } catch (error) {
+
+        alert(error.message);
+    }
+}
+
+
+/* =========================================================
+   MESSAGE
+========================================================= */
+
+function showMessage(
+    id,
+    text,
+    isError = false
+) {
+
+    const element =
+        document.getElementById(id);
+
+    element.textContent =
+        text;
+
+    element.classList.add('show');
+
+    if (isError) {
+        element.style.color =
+            '#ff7a87';
+    } else {
+        element.style.color =
+            '#20d879';
+    }
+
+    setTimeout(() => {
+        element.classList.remove('show');
+    }, 4000);
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+document
+    .getElementById('logoutBtn')
+    .addEventListener('click', async () => {
+
+        try {
+
+            await api('/api/logout', {
+                method: 'POST'
+            });
+
+        } catch {}
+
+        localStorage.removeItem(
+            '5d_token'
+        );
+
+        window.location.href =
+            '../login.html';
+    });
+
+
+/* =========================================================
+   START
+========================================================= */
+
+checkAuth();
+
+</script>
+
+</body>
+</html>
