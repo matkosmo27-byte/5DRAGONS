@@ -576,6 +576,34 @@ export default {
             }
 
             /*
+             * PROFILE
+             */
+            if (method === "PATCH" && url.pathname === "/api/profile") {
+                const auth = await requireAuth(request, env);
+                if (!auth.ok) return auth.response;
+                const body = await readJson(request);
+                if (!body) return errorResponse(request, "Nieprawidłowe dane JSON.");
+                const allowed = ["discord", "cs2_nick", "steam", "team"];
+                const updateData = {};
+                for (const key of allowed) {
+                    if (Object.prototype.hasOwnProperty.call(body, key)) {
+                        const value = body[key] == null ? null : String(body[key]).trim();
+                        updateData[key] = value || null;
+                    }
+                }
+                const columns = await getTableColumns(env, "users");
+                if (Object.prototype.hasOwnProperty.call(body, "avatar") && columns.includes("avatar")) {
+                    const value = body.avatar == null ? null : String(body.avatar);
+                    if (value && (!value.startsWith("data:image/") || value.length > 2500000)) return errorResponse(request, "Zdjęcie profilu jest nieprawidłowe albo za duże. Maksymalnie 2 MB.");
+                    updateData.avatar = value || null;
+                }
+                if (!Object.keys(updateData).length) return errorResponse(request, "Brak danych do zapisania.");
+                await dynamicUpdate(env, "users", auth.user.id, updateData);
+                const user = await env.DB.prepare("SELECT id, email, discord, cs2_nick, steam, role, team, created_at FROM users WHERE id = ? LIMIT 1").bind(auth.user.id).first();
+                return json(request, { success: true, message: "Profil został zapisany.", user });
+            }
+
+            /*
              * CONTACT
              */
             if (method === "POST" && url.pathname === "/api/contact") {
@@ -819,6 +847,19 @@ ${message}
                     });
                 }
 
+                if ((method === "PATCH" || method === "PUT" || method === "DELETE") && id) {
+                    const admin = await requireAdmin(request, env);
+                    if (!admin.ok) return admin.response;
+                    if (method === "DELETE") {
+                        await env.DB.prepare("UPDATE news SET status = 'ARCHIVED', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id).run();
+                        return json(request, { success: true, message: "News został usunięty." });
+                    }
+                    const body = await readJson(request);
+                    if (!body) return errorResponse(request, "Nieprawidłowe dane JSON.");
+                    await dynamicUpdate(env, "news", id, body);
+                    return json(request, { success: true, message: "News został zaktualizowany." });
+                }
+
                 if (
                     method === "POST" &&
                     url.pathname === "/api/news"
@@ -867,6 +908,19 @@ ${message}
                         success: true,
                         matches: result.results || []
                     });
+                }
+
+                if ((method === "PATCH" || method === "PUT" || method === "DELETE") && id) {
+                    const admin = await requireAdmin(request, env);
+                    if (!admin.ok) return admin.response;
+                    if (method === "DELETE") {
+                        await env.DB.prepare("DELETE FROM matches WHERE id = ?").bind(id).run();
+                        return json(request, { success: true, message: "Mecz został usunięty." });
+                    }
+                    const body = await readJson(request);
+                    if (!body) return errorResponse(request, "Nieprawidłowe dane JSON.");
+                    await dynamicUpdate(env, "matches", id, body);
+                    return json(request, { success: true, message: "Mecz został zaktualizowany." });
                 }
 
                 if (
@@ -924,6 +978,19 @@ ${message}
                         success: true,
                         recruitment: result.results || []
                     });
+                }
+
+                if ((method === "PATCH" || method === "PUT" || method === "DELETE") && id) {
+                    const admin = await requireAdmin(request, env);
+                    if (!admin.ok) return admin.response;
+                    if (method === "DELETE") {
+                        await env.DB.prepare("UPDATE recruitment SET active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id).run();
+                        return json(request, { success: true, message: "Ogłoszenie zostało wyłączone." });
+                    }
+                    const body = await readJson(request);
+                    if (!body) return errorResponse(request, "Nieprawidłowe dane JSON.");
+                    await dynamicUpdate(env, "recruitment", id, body);
+                    return json(request, { success: true, message: "Ogłoszenie zostało zaktualizowane." });
                 }
 
                 /*
@@ -1034,6 +1101,19 @@ ${message}
                         success: true,
                         achievements: result.results || []
                     });
+                }
+
+                if ((method === "PATCH" || method === "PUT" || method === "DELETE") && id) {
+                    const admin = await requireAdmin(request, env);
+                    if (!admin.ok) return admin.response;
+                    if (method === "DELETE") {
+                        await env.DB.prepare("DELETE FROM achievements WHERE id = ?").bind(id).run();
+                        return json(request, { success: true, message: "Osiągnięcie zostało usunięte." });
+                    }
+                    const body = await readJson(request);
+                    if (!body) return errorResponse(request, "Nieprawidłowe dane JSON.");
+                    await dynamicUpdate(env, "achievements", id, body);
+                    return json(request, { success: true, message: "Osiągnięcie zostało zaktualizowane." });
                 }
 
                 if (
