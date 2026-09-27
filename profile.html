@@ -1,1 +1,29 @@
-<!doctype html><html lang="pl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>5DRAGONS Academy</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/animations.css"></head><body><div data-nav-root></div><section class="section"><div class="container"><h1>My <span class="accent">Profile</span></h1><div data-profile></div></div></section><div data-footer></div><script src="js/main.js"></script></body></html>
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>5DRAGONS | Profil</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+:root{--g:#21e27b;--bg:#060908;--p:#0d1411;--l:#1c2b23;--m:#84928a}
+body{background:radial-gradient(circle at 75% 0,#103d27,transparent 30%),var(--bg)}
+.profile-wrap{max-width:1050px;margin:80px auto;padding:0 24px}.profile-hero{display:grid;grid-template-columns:180px 1fr;gap:30px;align-items:center;background:linear-gradient(145deg,#111a16,#0a100e);border:1px solid var(--l);border-radius:22px;padding:32px}.photo{width:150px;height:150px;border-radius:50%;object-fit:cover;border:2px solid #24563c;background:#101a15}.eyebrow{color:var(--g);font-size:11px;font-weight:900;letter-spacing:2px}.profile-hero h1{font-size:42px;margin:8px 0}.pill{display:inline-block;padding:6px 10px;border-radius:99px;background:#10251a;color:var(--g);border:1px solid #24563c;font-size:11px;font-weight:900}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.card{background:linear-gradient(145deg,#111a16,#0a100e);border:1px solid var(--l);border-radius:18px;padding:24px}.card h2{margin-top:0}.field{display:grid;gap:7px;margin:12px 0}.field label{font-size:11px;color:#98a59e;font-weight:700}input{width:100%;background:#080d0b;color:#fff;border:1px solid var(--l);border-radius:9px;padding:11px;outline:0}button{border:0;border-radius:9px;padding:11px 15px;background:var(--g);color:#031109;font-weight:900;cursor:pointer}.admin{display:inline-block;margin-top:16px;padding:11px 15px;background:#16221c;border:1px solid var(--l);border-radius:9px;color:#fff;text-decoration:none}.muted{color:var(--m)}#status{margin-top:12px;color:var(--g)}@media(max-width:700px){.profile-wrap{margin:40px auto}.profile-hero{grid-template-columns:1fr;text-align:center}.photo{margin:auto}.profile-hero h1{font-size:32px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div data-nav-root></div>
+<main class="profile-wrap">
+<div id="loading" class="muted">Ładowanie profilu...</div>
+<div id="profile" class="hidden">
+<section class="profile-hero"><img id="photo" class="photo" src="assets/logo.png"><div><div class="eyebrow">5DRAGONS MEMBER</div><h1 id="nick">-</h1><span id="role" class="pill">MEMBER</span><p id="email" class="muted"></p><a id="admin" class="admin hidden" href="admin/">⚙ Otwórz panel administracyjny</a></div></section>
+<div class="grid"><section class="card"><h2>Dane konta</h2><div class="field"><label>CS2 NICK</label><input id="cs2"></div><div class="field"><label>DISCORD</label><input id="discord"></div><div class="field"><label>STEAM URL</label><input id="steam"></div><div class="field"><label>TEAM</label><input id="team"></div><button id="save">Zapisz zmiany</button><div id="status"></div></section>
+<section class="card"><h2>Twoje konto</h2><p><span class="muted">Email</span><br><strong id="email2">-</strong></p><p><span class="muted">Rola</span><br><strong id="role2">-</strong></p><p><span class="muted">Dołączono</span><br><strong id="created">-</strong></p><p class="muted">Dane profilu są pobierane bezpośrednio z konta 5DRAGONS.</p></section></div>
+</div>
+<div id="denied" class="hidden" style="text-align:center;padding:80px 20px"><h2>Nie jesteś zalogowany</h2><p class="muted">Zaloguj się, aby otworzyć swój profil.</p><a href="login.html" style="color:#21e27b">Przejdź do logowania</a></div>
+</main><div data-footer></div><script src="js/main.js"></script>
+<script>
+const API="https://calm-sunset-b06e.matkosmo27.workers.dev";
+async function loadProfile(){const t=localStorage.getItem("5d_token");if(!t){loading.classList.add("hidden");denied.classList.remove("hidden");return}try{const r=await fetch(API+"/api/me",{headers:{Authorization:"Bearer "+t}});const d=await r.json();if(!r.ok||!d.user)throw Error();const u=d.user;nick.textContent=u.cs2_nick||u.discord||u.email;email.textContent=u.email;email2.textContent=u.email;role.textContent=u.role;role2.textContent=u.role;created.textContent=u.created_at||"-";cs2.value=u.cs2_nick||"";discord.value=u.discord||"";steam.value=u.steam||"";team.value=u.team||"";if(["OWNER","ADMIN","MANAGER","COACH","EDITOR"].includes(u.role))admin.classList.remove("hidden");loading.classList.add("hidden");profile.classList.remove("hidden")}catch(e){localStorage.removeItem("5d_token");loading.classList.add("hidden");denied.classList.remove("hidden")}}
+save.onclick=async()=>{status.textContent="Zapisywanie...";try{const t=localStorage.getItem("5d_token");const r=await fetch(API+"/api/profile",{method:"PATCH",headers:{"Content-Type":"application/json",Authorization:"Bearer "+t},body:JSON.stringify({cs2_nick:cs2.value,discord:discord.value,steam:steam.value,team:team.value})});const d=await r.json();if(!r.ok||d.success===false)throw Error(d.error||"Błąd");status.textContent="Profil zapisany.";nick.textContent=cs2.value||discord.value||email.textContent}catch(e){status.textContent=e.message}}
+loadProfile();
+</script></body></html>
