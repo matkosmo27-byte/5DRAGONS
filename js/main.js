@@ -87,7 +87,7 @@ function renderNav() {
                     <a data-nav href="recruitment.html">RECRUITMENT</a>
                     <a data-nav href="about.html">ABOUT</a>
                     <a data-nav href="contact.html">CONTACT</a>
-                    <a data-nav href="login.html">LOGIN</a>
+                    <a data-nav href="profile.html">PROFILE</a>
                 </div>
 
                 <a class="btn" href="recruitment.html">
