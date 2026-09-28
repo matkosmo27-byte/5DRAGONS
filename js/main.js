@@ -838,6 +838,44 @@ function formatArticleContent(value) {
 }
 
 
+
+/* =========================================================
+   CINEMATIC NAVIGATION TRANSITIONS
+========================================================= */
+function pageTransitions() {
+    const overlay = document.createElement('div');
+    overlay.className = 'page-transition';
+    document.body.appendChild(overlay);
+
+    const links = $('a[href]');
+    links.forEach(link => {
+        link.addEventListener('click', event => {
+            const href = link.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') ||
+                link.target === '_blank' || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+
+            let url;
+            try { url = new URL(href, location.href); } catch { return; }
+            if (url.origin !== location.origin || url.pathname === location.pathname && url.search === location.search) return;
+
+            event.preventDefault();
+
+            if (document.startViewTransition) {
+                overlay.classList.add('is-active');
+                setTimeout(() => {
+                    document.startViewTransition(() => {
+                        location.href = url.href;
+                    });
+                }, 180);
+            } else {
+                overlay.classList.add('is-active');
+                document.body.classList.add('page-exit');
+                setTimeout(() => { location.href = url.href; }, 460);
+            }
+        });
+    });
+}
+
 /* =========================================================
    START
 ========================================================= */
@@ -848,6 +886,7 @@ document.addEventListener(
 
         renderNav();
         footer();
+        pageTransitions();
 
         loadBranding();
     loadPlayers();
