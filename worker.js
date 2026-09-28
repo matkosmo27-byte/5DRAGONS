@@ -563,10 +563,8 @@ export default {
                 const meSelect = ["id", "email", "discord", "cs2_nick", "steam", "role", "team", "created_at", meColumns.includes("photo") ? "photo" : "NULL AS photo"].join(", ");
 
                 const fresh = await env.DB.prepare(
-                    "SELECT " + meSelect + " FROM users
-                    WHERE id = ?
-                    LIMIT 1
-                `).bind(auth.user.id).first();
+                    "SELECT " + meSelect + " FROM users WHERE id = ? LIMIT 1"
+                ).bind(auth.user.id).first();
 
                 return json(request, {
                     success: true,
