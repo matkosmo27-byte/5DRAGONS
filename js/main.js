@@ -73,9 +73,7 @@ function renderNav() {
                         src="assets/logo.png"
                         onerror="this.style.display='none'"
                     >
-                    <span>
-                        5<span>DRAGONS</span>
-                    </span>
+                    <span data-site-name>5DRAGONS</span>
                 </a>
 
                 <div class="links">
@@ -118,7 +116,7 @@ function footer() {
         <footer class="footer">
             <div class="container">
                 © ${new Date().getFullYear()}
-                5DRAGONS Academy. All rights reserved.
+                <span data-site-name>5DRAGONS Academy</span>. All rights reserved.
             </div>
         </footer>
     `;
@@ -133,7 +131,7 @@ async function loadBranding() {
         if (!response.ok) return;
         const data = await response.json();
         const s = data.settings || {};
-        if (s.site_name) document.title = s.site_name;
+        if (s.site_name) { document.title = s.site_name; document.querySelectorAll('[data-site-name]').forEach(el => el.textContent = s.site_name); }
         if (s.site_logo) {
             document.querySelectorAll('img[data-site-logo]').forEach(img => img.src = s.site_logo);
             document.querySelectorAll('.brand img').forEach(img => img.src = s.site_logo);
