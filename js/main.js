@@ -884,10 +884,10 @@ document.addEventListener(
 
         renderNav();
         footer();
-        pageTransitions();
 
+        // Dane strony muszą działać niezależnie od animacji przejść.
         loadBranding();
-    loadPlayers();
+        loadPlayers();
         loadNews();
         loadMatches();
 
@@ -897,6 +897,12 @@ document.addEventListener(
         auth();
         article();
         profile();
+
+        try {
+            pageTransitions();
+        } catch (error) {
+            console.warn('Page transitions failed:', error);
+        }
 
     }
 );
