@@ -1280,7 +1280,25 @@ ${message}
                     const existing = await env.DB.prepare(`SELECT id FROM settings WHERE id = 1 LIMIT 1`).first();
                     if (!existing) await env.DB.prepare(`INSERT INTO settings (id, site_name) VALUES (1, '5Dragons Academy')`).run();
                     await dynamicUpdate(env, "settings", 1, updateData);
-                    return json(request, { success: true, message: "Ustawienia strony zostały zapisane." });
+
+                    const savedColumns = ["id", "site_name", "logo_url"];
+                    if (columns.includes("footer_logo")) savedColumns.push("footer_logo");
+                    if (columns.includes("favicon")) savedColumns.push("favicon");
+
+                    const saved = await env.DB.prepare(
+                        `SELECT ${savedColumns.join(", ")} FROM settings WHERE id = 1 LIMIT 1`
+                    ).first();
+
+                    return json(request, {
+                        success: true,
+                        message: "Ustawienia strony zostały zapisane.",
+                        settings: {
+                            site_name: saved?.site_name || "5Dragons Academy",
+                            site_logo: saved?.logo_url || "",
+                            footer_logo: saved?.footer_logo || "",
+                            favicon: saved?.favicon || ""
+                        }
+                    });
                 }
                 return errorResponse(request, "Niedozwolona metoda.", 405);
             }
