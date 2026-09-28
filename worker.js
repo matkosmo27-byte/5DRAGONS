@@ -831,6 +831,7 @@ ${message}
              * NEWS
              */
             if (parts[1] === "news") {
+                const id = getIdFromPath(parts);
                 if (method === "GET") {
                     const result = await env.DB.prepare(`
                         SELECT *
@@ -897,6 +898,7 @@ ${message}
              * MATCHES
              */
             if (parts[1] === "matches") {
+                const id = getIdFromPath(parts);
                 if (method === "GET") {
                     const result = await env.DB.prepare(`
                         SELECT *
@@ -960,6 +962,7 @@ ${message}
              * RECRUITMENT
              */
             if (parts[1] === "recruitment") {
+                const id = getIdFromPath(parts);
                 /*
                  * PUBLIC LISTA REKRUTACJI
                  */
@@ -1090,6 +1093,7 @@ ${message}
              * ACHIEVEMENTS
              */
             if (parts[1] === "achievements") {
+                const id = getIdFromPath(parts);
                 if (method === "GET") {
                     const result = await env.DB.prepare(`
                         SELECT *
