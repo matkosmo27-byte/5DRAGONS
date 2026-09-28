@@ -145,8 +145,9 @@ async function loadBranding() {
 
         if (s.site_logo) {
             document.querySelectorAll('.brand img, img[data-site-logo]').forEach(img => {
-                img.src = s.site_logo;
+                img.src = s.site_logo + (s.site_logo.includes('?') ? '&' : '?') + 'v=' + Date.now();
                 img.removeAttribute('onerror');
+                img.style.display = '';
             });
         }
 
