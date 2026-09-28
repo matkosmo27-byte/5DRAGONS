@@ -1354,7 +1354,12 @@ ${message}
 
                 if (!ghResponse.ok) {
                     console.error("GitHub upload failed:", ghResponse.status, ghData);
-                    return errorResponse(request, "Nie udało się zapisać zdjęcia w GitHub.", 502);
+                    const details = ghData && (ghData.message || ghData.error);
+                    return errorResponse(
+                        request,
+                        `GitHub odrzucił zapis zdjęcia (HTTP ${ghResponse.status})${details ? ": " + String(details).slice(0, 300) : "."}`,
+                        502
+                    );
                 }
 
                 const imageUrl = `https://raw.githubusercontent.com/matkosmo27-byte/5DRAGONS/main/${path}`;
