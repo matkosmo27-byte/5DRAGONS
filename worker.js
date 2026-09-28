@@ -1243,6 +1243,53 @@ ${message}
             }
 
             /*
+             * SITE SETTINGS / BRANDING
+             */
+            if (url.pathname === "/api/settings") {
+                if (method === "GET") {
+                    try {
+                        await env.DB.prepare(`
+                            CREATE TABLE IF NOT EXISTS settings (
+                                key TEXT PRIMARY KEY,
+                                value TEXT
+                            )
+                        `).run();
+                    } catch {}
+                    const result = await env.DB.prepare("SELECT key, value FROM settings ORDER BY key").all();
+                    const settings = {};
+                    for (const row of (result.results || [])) settings[row.key] = row.value;
+                    return json(request, { success: true, settings });
+                }
+
+                if (method === "PATCH" || method === "POST") {
+                    const admin = await requireAdmin(request, env);
+                    if (!admin.ok) return admin.response;
+                    const body = await readJson(request);
+                    if (!body || typeof body !== "object") return errorResponse(request, "Nieprawidłowe dane ustawień.");
+                    await env.DB.prepare(`
+                        CREATE TABLE IF NOT EXISTS settings (
+                            key TEXT PRIMARY KEY,
+                            value TEXT
+                        )
+                    `).run();
+
+                    const allowed = ["site_logo", "footer_logo", "favicon", "site_name"];
+                    for (const key of allowed) {
+                        if (Object.prototype.hasOwnProperty.call(body, key)) {
+                            const value = body[key] == null ? "" : String(body[key]).trim();
+                            await env.DB.prepare(`
+                                INSERT INTO settings (key, value) VALUES (?, ?)
+                                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                            `).bind(key, value).run();
+                        }
+                    }
+                    return json(request, { success: true, message: "Ustawienia strony zostały zapisane." });
+                }
+
+                return errorResponse(request, "Niedozwolona metoda.", 405);
+            }
+
+            /*
              * ROOT
              */
             if (url.pathname === "/") {
