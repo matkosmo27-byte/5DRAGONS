@@ -70,7 +70,7 @@ function renderNav() {
 
                 <a class="brand" href="index.html">
                     <img
-                        src="assets/logo.svg"
+                        src="assets/logo5drag.png"
                         onerror="this.style.display='none'"
                     >
                     <span data-site-name>5DRAGONS</span>
@@ -213,9 +213,9 @@ async function loadPlayers() {
 
                     <img
                         class="avatar"
-                        src="${player.photo || 'assets/logo.svg'}"
+                        src="${player.photo || 'assets/logo5drag.png'}"
                         alt="${player.nick || 'Player'}"
-                        onerror="this.src='assets/logo.svg'"
+                        onerror="this.src='assets/logo5drag.png'"
                     >
 
                     <div>
