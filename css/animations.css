@@ -30,3 +30,24 @@
 .nav a:hover{transform:translateY(-2px)}
 .nav a:hover:after,.nav a.active:after{transform:scaleX(1);transform-origin:left}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+
+/* =========================================================
+   CINEMATIC PAGE TRANSITIONS
+========================================================= */
+@keyframes pageCurtainIn{0%{transform:scaleY(0);transform-origin:bottom;opacity:0}35%{opacity:1}100%{transform:scaleY(1);transform-origin:bottom;opacity:1}}
+@keyframes pageCurtainOut{0%{transform:scaleY(1);transform-origin:top;opacity:1}100%{transform:scaleY(0);transform-origin:top;opacity:1}}
+@keyframes pageFlash{0%{opacity:0;transform:scaleX(.2)}35%{opacity:1;transform:scaleX(1)}100%{opacity:0;transform:scaleX(1)}}
+@keyframes pageGrid{0%{opacity:0;transform:translateY(-100%)}30%{opacity:.5}100%{opacity:0;transform:translateY(100%)}}
+.page-transition{position:fixed;inset:0;z-index:99999;pointer-events:none;display:grid;place-items:center;background:rgba(7,7,9,.96);opacity:0;visibility:hidden;overflow:hidden}
+.page-transition.is-active{visibility:visible;opacity:1;animation:pageCurtainIn .48s cubic-bezier(.76,0,.24,1) both}
+.page-transition.is-active:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 5px,rgba(255,255,255,.025) 6px);animation:pageGrid .65s ease-out both}
+.page-transition.is-active:after{content:"";position:absolute;width:80%;height:2px;background:linear-gradient(90deg,transparent,#e50914 20%,#fff 50%,#e50914 80%,transparent);box-shadow:0 0 30px rgba(229,9,20,.7);animation:pageFlash .55s .08s cubic-bezier(.16,1,.3,1) both}
+.page-transition.is-leaving{animation:pageCurtainOut .62s cubic-bezier(.76,0,.24,1) both}
+body.page-exit>*{animation:pageExit .38s cubic-bezier(.76,0,.24,1) both}
+@keyframes pageExit{to{opacity:0;transform:translateY(-10px) scale(.985);filter:blur(4px)}}
+::view-transition-old(root){animation:pageOldOut .38s cubic-bezier(.76,0,.24,1) both}
+::view-transition-new(root){animation:pageNewIn .7s .08s cubic-bezier(.16,1,.3,1) both}
+@keyframes pageOldOut{to{opacity:0;filter:blur(8px);transform:scale(.985)}}
+@keyframes pageNewIn{from{opacity:0;filter:blur(10px);transform:translateY(18px) scale(1.015)}to{opacity:1;filter:none;transform:none}}
+@media (prefers-reduced-motion:reduce){.page-transition,.page-transition.is-active,.page-transition.is-leaving,body.page-exit>*{animation:none!important}::view-transition-old(root),::view-transition-new(root){animation:none!important}}
