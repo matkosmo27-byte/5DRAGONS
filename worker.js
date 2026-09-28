@@ -1431,12 +1431,48 @@ ${message}
             }
 
             /*
+             * FRONTEND
+             *
+             * Worker serwuje również statyczny frontend z repozytorium GitHub.
+             * Dzięki temu ten sam adres Cloudflare może obsługiwać stronę oraz /api/*.
+             */
+            const isApiRequest = url.pathname === "/api" || url.pathname.startsWith("/api/");
+
+            if (!isApiRequest && (method === "GET" || method === "HEAD")) {
+                const requestedPath = url.pathname === "/"
+                    ? "index.html"
+                    : url.pathname.replace(/^\\/+/, "");
+
+                if (
+                    requestedPath &&
+                    !requestedPath.includes("..") &&
+                    /^[a-zA-Z0-9_./-]+$/.test(requestedPath) &&
+                    /\\.(html|css|js|png|jpg|jpeg|webp|gif|svg|ico|avif|woff2?|ttf|json)$/i.test(requestedPath)
+                ) {
+                    const rawUrl = "https://raw.githubusercontent.com/matkosmo27-byte/5DRAGONS/main/" + requestedPath;
+                    const assetResponse = await fetch(rawUrl, {
+                        headers: { "User-Agent": "5DRAGONS-Worker" }
+                    });
+
+                    if (assetResponse.ok) {
+                        const headers = new Headers(assetResponse.headers);
+                        headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+                        headers.set("X-5DRAGONS-Frontend", "github-main");
+                        return new Response(method === "HEAD" ? null : assetResponse.body, {
+                            status: assetResponse.status,
+                            headers
+                        });
+                    }
+                }
+            }
+
+            /*
              * ROOT
              */
             if (url.pathname === "/") {
                 return json(request, {
                     success: false,
-                    error: "Nie znaleziono endpointu."
+                    error: "Nie znaleziono strony."
                 }, 404);
             }
 
