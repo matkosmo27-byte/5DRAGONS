@@ -1247,6 +1247,60 @@ ${message}
             }
 
             /*
+             * R2 ASSET UPLOAD / MEDIA
+             *
+             * Wymaga bindingu R2 o nazwie ASSETS.
+             */
+            if (url.pathname === "/api/upload" && method === "POST") {
+                const admin = await requireAdmin(request, env);
+                if (!admin.ok) return admin.response;
+                if (!env.ASSETS) return errorResponse(request, "Brak podpiętego bucketu R2 ASSETS.", 500);
+
+                const form = await request.formData();
+                const file = form.get("file");
+                const folder = String(form.get("folder") || "uploads").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40) || "uploads";
+
+                if (!(file instanceof File)) return errorResponse(request, "Nie wybrano pliku.");
+                if (file.size > 10 * 1024 * 1024) return errorResponse(request, "Plik jest za duży. Maksymalnie 10 MB.");
+                if (!String(file.type || "").startsWith("image/")) return errorResponse(request, "Dozwolone są tylko pliki graficzne.");
+
+                const extMap = {"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif","image/svg+xml":"svg","image/avif":"avif"};
+                const ext = extMap[file.type] || "bin";
+                const key = `${folder}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+
+                await env.ASSETS.put(key, file.stream(), {
+                    httpMetadata: {
+                        contentType: file.type,
+                        cacheControl: "public, max-age=31536000, immutable"
+                    }
+                });
+
+                return json(request, {
+                    success: true,
+                    url: `${url.origin}/media/${encodeURIComponent(key)}`,
+                    key,
+                    size: file.size,
+                    type: file.type
+                });
+            }
+
+            if (url.pathname.startsWith("/media/") && method === "GET") {
+                if (!env.ASSETS) return errorResponse(request, "Brak podpiętego bucketu R2 ASSETS.", 500);
+
+                const key = decodeURIComponent(url.pathname.slice("/media/".length));
+                if (!key || key.includes("..")) return errorResponse(request, "Nieprawidłowy plik.", 400);
+
+                const object = await env.ASSETS.get(key);
+                if (!object) return errorResponse(request, "Plik nie istnieje.", 404);
+
+                const headers = new Headers();
+                object.writeHttpMetadata(headers);
+                headers.set("etag", object.httpEtag);
+                headers.set("Cache-Control", "public, max-age=31536000, immutable");
+                return new Response(object.body, { headers });
+            }
+
+            /*
              * SITE SETTINGS / BRANDING
              *
              * Produkcyjna tabela settings jest singletonem z rekordem id=1.
