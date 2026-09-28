@@ -552,9 +552,23 @@ export default {
                     return auth.response;
                 }
 
+                const userColumns = await getTableColumns(env, "users");
+                if (!userColumns.includes("photo")) {
+                    try {
+                        await env.DB.prepare("ALTER TABLE users ADD COLUMN photo TEXT").run();
+                    } catch {}
+                }
+
+                const fresh = await env.DB.prepare(`
+                    SELECT id, email, discord, cs2_nick, steam, role, team, created_at, photo
+                    FROM users
+                    WHERE id = ?
+                    LIMIT 1
+                `).bind(auth.user.id).first();
+
                 return json(request, {
                     success: true,
-                    user: auth.user
+                    user: fresh || { ...auth.user, photo: "" }
                 });
             }
 
@@ -1226,7 +1240,8 @@ ${message}
                         "cs2_nick",
                         "steam",
                         "role",
-                        "team"
+                        "team",
+                        "photo"
                     ];
 
                     const updateData = {};
@@ -1265,14 +1280,19 @@ ${message}
              * Wymagany secret Workera: GITHUB_TOKEN.
              */
             if (url.pathname === "/api/upload" && method === "POST") {
-                const admin = await requireAdmin(request, env);
-                if (!admin.ok) return admin.response;
+                const auth = await requireAuth(request, env);
+                if (!auth.ok) return auth.response;
                 if (!env.GITHUB_TOKEN) return errorResponse(request, "Brak konfiguracji GITHUB_TOKEN w Workerze.", 500);
 
                 const form = await request.formData();
                 const file = form.get("file");
                 const folderRaw = String(form.get("folder") || "uploads");
-                const folder = folderRaw.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40) || "uploads";
+                const requestedFolder = folderRaw.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40) || "uploads";
+                const adminRoles = ["OWNER", "ADMIN", "MANAGER", "COACH", "EDITOR"];
+                if (!adminRoles.includes(auth.user.role) && requestedFolder !== "profile") {
+                    return errorResponse(request, "Brak uprawnień do tego rodzaju uploadu.", 403);
+                }
+                const folder = requestedFolder;
 
                 if (!(file instanceof File)) return errorResponse(request, "Nie wybrano pliku.");
                 if (file.size > 10 * 1024 * 1024) return errorResponse(request, "Plik jest za duży. Maksymalnie 10 MB.");
