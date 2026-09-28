@@ -559,9 +559,11 @@ export default {
                     } catch {}
                 }
 
-                const fresh = await env.DB.prepare(`
-                    SELECT id, email, discord, cs2_nick, steam, role, team, created_at, photo
-                    FROM users
+                const meColumns = await getTableColumns(env, "users");
+                const meSelect = ["id", "email", "discord", "cs2_nick", "steam", "role", "team", "created_at", meColumns.includes("photo") ? "photo" : "NULL AS photo"].join(", ");
+
+                const fresh = await env.DB.prepare(
+                    "SELECT " + meSelect + " FROM users
                     WHERE id = ?
                     LIMIT 1
                 `).bind(auth.user.id).first();
@@ -618,14 +620,34 @@ export default {
                     }
                 }
                 const columns = await getTableColumns(env, "users");
+
+                // Profilowe zdjęcie zapisujemy jako zwykły publiczny URL z GitHub.
+                // Endpoint /api/upload zwraca taki URL po przesłaniu pliku.
+                if (Object.prototype.hasOwnProperty.call(body, "photo")) {
+                    if (!columns.includes("photo")) {
+                        try {
+                            await env.DB.prepare("ALTER TABLE users ADD COLUMN photo TEXT").run();
+                        } catch {}
+                    }
+                    updateData.photo = body.photo == null ? null : String(body.photo).trim() || null;
+                }
+
                 if (Object.prototype.hasOwnProperty.call(body, "avatar") && columns.includes("avatar")) {
                     const value = body.avatar == null ? null : String(body.avatar);
                     if (value && (!value.startsWith("data:image/") || value.length > 2500000)) return errorResponse(request, "Zdjęcie profilu jest nieprawidłowe albo za duże. Maksymalnie 2 MB.");
                     updateData.avatar = value || null;
                 }
+
                 if (!Object.keys(updateData).length) return errorResponse(request, "Brak danych do zapisania.");
+
                 await dynamicUpdate(env, "users", auth.user.id, updateData);
-                const user = await env.DB.prepare("SELECT id, email, discord, cs2_nick, steam, role, team, created_at FROM users WHERE id = ? LIMIT 1").bind(auth.user.id).first();
+
+                const freshColumns = await getTableColumns(env, "users");
+                const profileSelect = ["id", "email", "discord", "cs2_nick", "steam", "role", "team", "created_at", freshColumns.includes("photo") ? "photo" : "NULL AS photo"].join(", ");
+                const user = await env.DB.prepare(
+                    "SELECT " + profileSelect + " FROM users WHERE id = ? LIMIT 1"
+                ).bind(auth.user.id).first();
+
                 return json(request, { success: true, message: "Profil został zapisany.", user });
             }
 
@@ -1355,7 +1377,7 @@ ${message}
              * Produkcyjna tabela settings jest singletonem z rekordem id=1.
              * Używamy istniejących kolumn zamiast schematu key/value.
              */
-            if (url.pathname === "/api/settings") {
+            if (url.pathname === "/api/settings" || url.pathname === "/api/branding") {
                 if (method === "GET") {
                     const columns = await getTableColumns(env, "settings");
                     const hasFooterLogo = columns.includes("footer_logo");
