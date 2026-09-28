@@ -1,4 +1,4 @@
-const API_URL = window.location.origin;
+const API_URL = 'https://calm-sunset-b06e.matkosmo27.workers.dev';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
