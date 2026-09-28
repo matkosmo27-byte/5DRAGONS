@@ -143,13 +143,15 @@ async function loadBranding() {
             });
         }
 
-        if (s.site_logo) {
-            document.querySelectorAll('.brand img, img[data-site-logo]').forEach(img => {
-                img.src = s.site_logo + (s.site_logo.includes('?') ? '&' : '?') + 'v=' + Date.now();
-                img.removeAttribute('onerror');
-                img.style.display = '';
-            });
-        }
+        const siteLogo = s.site_logo && !/logo\\.svg(?:[?#]|$)/i.test(s.site_logo)
+            ? s.site_logo
+            : 'assets/logo5drag.png';
+
+        document.querySelectorAll('.brand img, img[data-site-logo]').forEach(img => {
+            img.src = siteLogo + (siteLogo.includes('?') ? '&' : '?') + 'v=' + Date.now();
+            img.removeAttribute('onerror');
+            img.style.display = '';
+        });
 
         if (s.footer_logo) {
             document.querySelectorAll('img[data-footer-logo]').forEach(img => {
