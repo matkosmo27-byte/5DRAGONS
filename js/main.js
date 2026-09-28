@@ -127,18 +127,35 @@ function footer() {
 
 async function loadBranding() {
     try {
-        const response = await fetch(API_URL + '/api/settings', { cache: 'no-store' });
+        const response = await fetch(API_URL + '/api/settings?_=' + Date.now(), {
+            method: 'GET',
+            cache: 'no-store',
+            headers: { 'Accept': 'application/json' }
+        });
         if (!response.ok) return;
         const data = await response.json();
         const s = data.settings || {};
-        if (s.site_name) { document.title = s.site_name; document.querySelectorAll('[data-site-name]').forEach(el => el.textContent = s.site_name); }
+
+        if (s.site_name) {
+            document.title = s.site_name;
+            document.querySelectorAll('[data-site-name]').forEach(el => {
+                el.textContent = s.site_name;
+            });
+        }
+
         if (s.site_logo) {
-            document.querySelectorAll('img[data-site-logo]').forEach(img => img.src = s.site_logo);
-            document.querySelectorAll('.brand img').forEach(img => img.src = s.site_logo);
+            document.querySelectorAll('.brand img, img[data-site-logo]').forEach(img => {
+                img.src = s.site_logo;
+                img.removeAttribute('onerror');
+            });
         }
+
         if (s.footer_logo) {
-            document.querySelectorAll('img[data-footer-logo]').forEach(img => img.src = s.footer_logo);
+            document.querySelectorAll('img[data-footer-logo]').forEach(img => {
+                img.src = s.footer_logo;
+            });
         }
+
         if (s.favicon) {
             let link = document.querySelector('link[rel="icon"]');
             if (!link) {
@@ -148,7 +165,9 @@ async function loadBranding() {
             }
             link.href = s.favicon;
         }
-    } catch {}
+    } catch (error) {
+        console.warn('Branding load failed:', error);
+    }
 }
 
 function updateLoginLink() {
