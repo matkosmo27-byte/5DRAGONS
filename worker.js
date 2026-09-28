@@ -1441,7 +1441,7 @@ ${message}
             if (!isApiRequest && (method === "GET" || method === "HEAD")) {
                 const requestedPath = url.pathname === "/"
                     ? "index.html"
-                    : url.pathname.replace(/^\\/+/, "");
+                    : url.pathname.replace(/^\/+/, "");
 
                 if (
                     requestedPath &&
