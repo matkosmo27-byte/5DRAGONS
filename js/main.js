@@ -70,7 +70,7 @@ function renderNav() {
 
                 <a class="brand" href="index.html">
                     <img
-                        src="assets/logo5drag.png"
+                        src="assets/logo5drag-transparent.png"
                         onerror="this.style.display='none'"
                     >
                     <span data-site-name>5DRAGONS</span>
@@ -143,9 +143,7 @@ async function loadBranding() {
             });
         }
 
-        const siteLogo = s.site_logo && !/logo\\.svg(?:[?#]|$)/i.test(s.site_logo)
-            ? s.site_logo
-            : 'assets/logo5drag.png';
+        const siteLogo = 'assets/logo5drag-transparent.png';
 
         document.querySelectorAll('.brand img, img[data-site-logo]').forEach(img => {
             img.src = siteLogo + (siteLogo.includes('?') ? '&' : '?') + 'v=' + Date.now();
@@ -215,9 +213,9 @@ async function loadPlayers() {
 
                     <img
                         class="avatar"
-                        src="${player.photo || 'assets/logo5drag.png'}"
+                        src="${player.photo || 'assets/logo5drag-transparent.png'}"
                         alt="${player.nick || 'Player'}"
-                        onerror="this.src='assets/logo5drag.png'"
+                        onerror="this.src='assets/logo5drag-transparent.png'"
                     >
 
                     <div>
