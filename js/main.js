@@ -87,7 +87,7 @@ function renderNav() {
                     <a data-nav href="recruitment.html">RECRUITMENT</a>
                     <a data-nav href="about.html">ABOUT</a>
                     <a data-nav href="contact.html">CONTACT</a>
-                    <a data-nav href="profile.html">PROFILE</a>
+                    <a data-nav href="profile.html">PROFILE</a><a data-login-link href="login.html">LOGIN</a>
                 </div>
 
                 <a class="btn" href="recruitment.html">
@@ -99,6 +99,7 @@ function renderNav() {
     `;
 
     nav();
+    updateLoginLink();
 }
 
 
@@ -123,6 +124,42 @@ function footer() {
     `;
 }
 
+
+
+
+async function loadBranding() {
+    try {
+        const response = await fetch(API_URL + '/api/settings', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        const s = data.settings || {};
+        if (s.site_name) document.title = s.site_name;
+        if (s.site_logo) {
+            document.querySelectorAll('img[data-site-logo]').forEach(img => img.src = s.site_logo);
+            document.querySelectorAll('.brand img').forEach(img => img.src = s.site_logo);
+        }
+        if (s.footer_logo) {
+            document.querySelectorAll('img[data-footer-logo]').forEach(img => img.src = s.footer_logo);
+        }
+        if (s.favicon) {
+            let link = document.querySelector('link[rel="icon"]');
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.href = s.favicon;
+        }
+    } catch {}
+}
+
+function updateLoginLink() {
+    const link = $('[data-login-link]');
+    if (!link) return;
+    link.textContent = localStorage.getItem('5d_token') ? 'LOGOUT' : 'LOGIN';
+    link.href = localStorage.getItem('5d_token') ? '#' : 'login.html';
+    if (localStorage.getItem('5d_token')) link.onclick = event => { event.preventDefault(); logout(); };
+}
 
 /* =========================================================
    PLAYERS
@@ -792,7 +829,8 @@ document.addEventListener(
         renderNav();
         footer();
 
-        loadPlayers();
+        loadBranding();
+    loadPlayers();
         loadNews();
         loadMatches();
 
