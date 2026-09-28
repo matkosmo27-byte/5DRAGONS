@@ -882,7 +882,7 @@ ${message}
                     const result = await env.DB.prepare(`
                         SELECT *
                         FROM news
-                        WHERE status = 'PUBLISHED'
+                        WHERE status = 'PUBLISHED' OR status IS NULL
                         ORDER BY
                             COALESCE(published_at, created_at) DESC,
                             id DESC
@@ -926,10 +926,19 @@ ${message}
                         );
                     }
 
+                    const newsColumns = await getTableColumns(env, "news");
+                    const publishData = { ...body };
+                    if (newsColumns.includes("status") && !publishData.status) {
+                        publishData.status = "PUBLISHED";
+                    }
+                    if (newsColumns.includes("published_at") && !publishData.published_at) {
+                        publishData.published_at = new Date().toISOString();
+                    }
+
                     const result = await dynamicInsert(
                         env,
                         "news",
-                        body
+                        publishData
                     );
 
                     return json(request, {
