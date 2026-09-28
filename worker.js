@@ -1357,8 +1357,7 @@ ${message}
                     return errorResponse(request, "Nie udało się zapisać zdjęcia w GitHub.", 502);
                 }
 
-                const imageUrl = ghData?.content?.download_url ||
-                    `https://raw.githubusercontent.com/matkosmo27-byte/5DRAGONS/main/${path}`;
+                const imageUrl = `https://raw.githubusercontent.com/matkosmo27-byte/5DRAGONS/main/${path}`;
 
                 return json(request, {
                     success: true,
