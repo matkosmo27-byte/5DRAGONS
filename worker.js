@@ -1244,48 +1244,40 @@ ${message}
 
             /*
              * SITE SETTINGS / BRANDING
+             *
+             * Produkcyjna tabela settings jest singletonem z rekordem id=1.
+             * Używamy istniejących kolumn zamiast schematu key/value.
              */
             if (url.pathname === "/api/settings") {
                 if (method === "GET") {
-                    try {
-                        await env.DB.prepare(`
-                            CREATE TABLE IF NOT EXISTS settings (
-                                key TEXT PRIMARY KEY,
-                                value TEXT
-                            )
-                        `).run();
-                    } catch {}
-                    const result = await env.DB.prepare("SELECT key, value FROM settings ORDER BY key").all();
-                    const settings = {};
-                    for (const row of (result.results || [])) settings[row.key] = row.value;
-                    return json(request, { success: true, settings });
+                    const columns = await getTableColumns(env, "settings");
+                    const hasFooterLogo = columns.includes("footer_logo");
+                    const hasFavicon = columns.includes("favicon");
+                    const selectColumns = ["id","site_name","logo_url",hasFooterLogo ? "footer_logo" : "NULL AS footer_logo",hasFavicon ? "favicon" : "NULL AS favicon"].join(", ");
+                    let row = await env.DB.prepare(`SELECT ${selectColumns} FROM settings WHERE id = 1 LIMIT 1`).first();
+                    if (!row) {
+                        await env.DB.prepare(`INSERT INTO settings (id, site_name) VALUES (1, '5Dragons Academy')`).run();
+                        row = await env.DB.prepare(`SELECT ${selectColumns} FROM settings WHERE id = 1 LIMIT 1`).first();
+                    }
+                    return json(request, { success: true, settings: { site_name: row?.site_name || "5Dragons Academy", site_logo: row?.logo_url || "", footer_logo: row?.footer_logo || "", favicon: row?.favicon || "" } });
                 }
-
                 if (method === "PATCH" || method === "POST") {
                     const admin = await requireAdmin(request, env);
                     if (!admin.ok) return admin.response;
                     const body = await readJson(request);
                     if (!body || typeof body !== "object") return errorResponse(request, "Nieprawidłowe dane ustawień.");
-                    await env.DB.prepare(`
-                        CREATE TABLE IF NOT EXISTS settings (
-                            key TEXT PRIMARY KEY,
-                            value TEXT
-                        )
-                    `).run();
-
-                    const allowed = ["site_logo", "footer_logo", "favicon", "site_name"];
-                    for (const key of allowed) {
-                        if (Object.prototype.hasOwnProperty.call(body, key)) {
-                            const value = body[key] == null ? "" : String(body[key]).trim();
-                            await env.DB.prepare(`
-                                INSERT INTO settings (key, value) VALUES (?, ?)
-                                ON CONFLICT(key) DO UPDATE SET value = excluded.value
-                            `).bind(key, value).run();
-                        }
-                    }
+                    const columns = await getTableColumns(env, "settings");
+                    const updateData = {};
+                    if (Object.prototype.hasOwnProperty.call(body, "site_name")) updateData.site_name = String(body.site_name ?? "").trim() || "5Dragons Academy";
+                    if (Object.prototype.hasOwnProperty.call(body, "site_logo")) updateData.logo_url = String(body.site_logo ?? "").trim();
+                    if (columns.includes("footer_logo") && Object.prototype.hasOwnProperty.call(body, "footer_logo")) updateData.footer_logo = String(body.footer_logo ?? "").trim();
+                    if (columns.includes("favicon") && Object.prototype.hasOwnProperty.call(body, "favicon")) updateData.favicon = String(body.favicon ?? "").trim();
+                    if (!Object.keys(updateData).length) return errorResponse(request, "Brak ustawień do zapisania.");
+                    const existing = await env.DB.prepare(`SELECT id FROM settings WHERE id = 1 LIMIT 1`).first();
+                    if (!existing) await env.DB.prepare(`INSERT INTO settings (id, site_name) VALUES (1, '5Dragons Academy')`).run();
+                    await dynamicUpdate(env, "settings", 1, updateData);
                     return json(request, { success: true, message: "Ustawienia strony zostały zapisane." });
                 }
-
                 return errorResponse(request, "Niedozwolona metoda.", 405);
             }
 
