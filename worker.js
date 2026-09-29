@@ -871,11 +871,18 @@ ${message}
             if (parts[1] === "players") {
                 const id = getIdFromPath(parts);
 
+                const faceitId =
+                    parts.length === 4 &&
+                    parts[3] === "faceit" &&
+                    /^\d+$/.test(parts[2] || "")
+                        ? Number(parts[2])
+                        : null;
+
                 if (
                     method === "POST" &&
                     parts.length === 4 &&
                     parts[3] === "faceit" &&
-                    id
+                    faceitId
                 ) {
                     const admin = await requireAdmin(request, env);
 
@@ -889,7 +896,7 @@ ${message}
                         WHERE id = ?
                         LIMIT 1
                     `)
-                        .bind(id)
+                        .bind(faceitId)
                         .first();
 
                     if (!player) {
