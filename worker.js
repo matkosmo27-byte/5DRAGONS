@@ -1475,6 +1475,7 @@ ${message}
 
                     if (assetResponse.ok) {
                         const headers = new Headers(assetResponse.headers);
+                        headers.delete("Content-Security-Policy");
                         headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
                         headers.set("X-5DRAGONS-Frontend", "github-main");
                         return new Response(method === "HEAD" ? null : assetResponse.body, {
