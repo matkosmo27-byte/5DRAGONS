@@ -859,275 +859,124 @@ function formatArticleContent(value) {
    CINEMATIC NAVIGATION TRANSITIONS
 ========================================================= */
 function pageTransitions() {
-    /*
-     * 5DRAGONS CINEMATIC ROUTER
-     * Pełnoekranowy transition jest renderowany inline, więc nie zależy
-     * od wersji CSS z CDN. Strona wychodzi z ruchem i głębią, a nowa
-     * strona otwiera się przez dwa "shuttery" z czerwonym światłem.
-     */
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        return;
-    }
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const style = document.createElement('style');
     style.textContent = `
-        :root {
-            --five-red: #e50914;
-            --five-black: #050506;
-        }
-
         .five-transition {
             position: fixed;
             inset: 0;
             z-index: 2147483647;
             pointer-events: none;
             overflow: hidden;
-            opacity: 1;
-            visibility: visible;
             background: #050506;
-            perspective: 1400px;
         }
-
-        .five-transition .five-shutter {
-            position: absolute;
-            top: -8%;
-            bottom: -8%;
-            width: 53%;
-            background:
-                linear-gradient(135deg, rgba(255,255,255,.018), transparent 24%),
-                linear-gradient(160deg, #0b0b0d 0%, #050506 58%, #100708 100%);
-            box-shadow:
-                inset 0 0 90px rgba(0,0,0,.72),
-                0 0 80px rgba(0,0,0,.35);
-            will-change: transform;
-        }
-
-        .five-transition .five-shutter::before {
+        .five-transition::before,
+        .five-transition::after {
             content: "";
             position: absolute;
-            inset: 0;
+            top: -10%;
+            bottom: -10%;
+            width: 56%;
             background:
-                linear-gradient(90deg, transparent 0 96%, rgba(229,9,20,.7) 97%, transparent 99%),
-                repeating-linear-gradient(0deg, transparent 0 7px, rgba(255,255,255,.022) 8px),
-                linear-gradient(115deg, transparent 0 42%, rgba(229,9,20,.055) 50%, transparent 58%);
-            opacity: .9;
+                linear-gradient(120deg, rgba(255,255,255,.025), transparent 22%),
+                linear-gradient(160deg, #0c0c0e 0%, #050506 58%, #120708 100%);
+            box-shadow: inset 0 0 100px rgba(0,0,0,.8), 0 0 80px rgba(0,0,0,.5);
+            transition: transform .72s cubic-bezier(.77,0,.175,1);
+        }
+        .five-transition::before {
+            left: -4%;
+            transform: translateX(0) skewX(-8deg);
+            border-right: 2px solid rgba(229,9,20,.65);
+        }
+        .five-transition::after {
+            right: -4%;
+            transform: translateX(0) skewX(8deg);
+            border-left: 2px solid rgba(229,9,20,.65);
+        }
+        .five-transition.open::before { transform: translateX(-112%) skewX(-8deg); }
+        .five-transition.open::after { transform: translateX(112%) skewX(8deg); }
+
+        .five-transition .line {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 100vw;
+            height: 3px;
+            transform: translate(-50%,-50%) scaleX(.15);
+            background: linear-gradient(90deg,transparent,#e50914 25%,#fff 50%,#e50914 75%,transparent);
+            box-shadow: 0 0 12px #e50914, 0 0 45px rgba(229,9,20,.9);
+            opacity: 0;
+        }
+        .five-transition.closing .line {
+            animation: fiveLine .62s cubic-bezier(.16,1,.3,1) both;
+        }
+        .five-transition.opening .line {
+            animation: fiveLineOut .7s cubic-bezier(.16,1,.3,1) both;
         }
 
-        .five-transition .five-shutter::after {
-            content: "";
+        .five-transition .scan {
             position: absolute;
             inset: 0;
-            background:
-                linear-gradient(90deg, rgba(229,9,20,.10), transparent 35%),
-                radial-gradient(circle at 75% 50%, rgba(229,9,20,.13), transparent 28%);
-            mix-blend-mode: screen;
+            background: repeating-linear-gradient(0deg,transparent 0 5px,rgba(255,255,255,.025) 6px);
+            opacity: .35;
         }
 
-        .five-transition .five-left {
-            left: -3%;
-            transform: translateX(0) skewX(-7deg);
-            transform-origin: left center;
-        }
-
-        .five-transition .five-right {
-            right: -3%;
-            transform: translateX(0) skewX(7deg);
-            transform-origin: right center;
-        }
-
-        .five-transition .five-center {
+        .five-transition .logo-mark {
             position: absolute;
             left: 50%;
             top: 50%;
-            width: 2px;
-            height: 62vh;
-            transform: translate(-50%, -50%) scaleY(0);
-            transform-origin: center;
-            background: linear-gradient(180deg, transparent, rgba(229,9,20,.45) 18%, #fff 50%, rgba(229,9,20,.45) 82%, transparent);
-            box-shadow: 0 0 16px rgba(229,9,20,.9), 0 0 70px rgba(229,9,20,.45);
+            transform: translate(-50%,-50%) scale(.72);
+            color: #fff;
+            font: 800 14px/1 Inter,Arial,sans-serif;
+            letter-spacing: .42em;
+            text-shadow: 0 0 24px rgba(229,9,20,.8);
             opacity: 0;
         }
-
-        .five-transition .five-beam {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 140vw;
-            height: 1px;
-            transform: translate(-50%, -50%) scaleX(.08);
-            background: linear-gradient(90deg, transparent, rgba(229,9,20,.15), #e50914 38%, #fff 50%, #e50914 62%, rgba(229,9,20,.15), transparent);
-            box-shadow: 0 0 28px rgba(229,9,20,.8);
-            opacity: 0;
+        .five-transition.closing .logo-mark {
+            animation: fiveMark .62s cubic-bezier(.16,1,.3,1) both;
+        }
+        .five-transition.opening .logo-mark {
+            animation: fiveMarkOut .55s cubic-bezier(.76,0,.24,1) both;
         }
 
-        .five-transition .five-grid {
-            position: absolute;
-            inset: 0;
-            opacity: .16;
-            background-image:
-                linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
-            background-size: 72px 72px;
-            transform: scale(1.12);
+        @keyframes fiveLine {
+            0% { opacity: 0; transform: translate(-50%,-50%) scaleX(.05); }
+            35% { opacity: 1; transform: translate(-50%,-50%) scaleX(1); }
+            100% { opacity: 0; transform: translate(-50%,-50%) scaleX(.65); }
+        }
+        @keyframes fiveLineOut {
+            0% { opacity: 1; transform: translate(-50%,-50%) scaleX(1); }
+            100% { opacity: 0; transform: translate(-50%,-50%) scaleX(.02); }
+        }
+        @keyframes fiveMark {
+            0% { opacity: 0; transform: translate(-50%,-50%) scale(.7); }
+            35% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%,-50%) scale(1.12); }
+        }
+        @keyframes fiveMarkOut {
+            from { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+            to { opacity: 0; transform: translate(-50%,-50%) scale(1.15); }
         }
 
-        .five-transition .five-caption {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            color: rgba(255,255,255,.92);
-            font: 700 11px/1.2 Inter, Arial, sans-serif;
-            letter-spacing: .34em;
-            text-transform: uppercase;
-            white-space: nowrap;
-            opacity: 0;
-            text-shadow: 0 0 22px rgba(229,9,20,.55);
+        body.five-exit > *:not(.five-transition) {
+            animation: fiveContentExit .48s cubic-bezier(.76,0,.24,1) both;
         }
-
-        .five-transition .five-caption b {
-            color: #e50914;
-            font-weight: 800;
-        }
-
-        .five-transition.is-opening .five-left {
-            transform: translateX(-108%) skewX(-7deg);
-        }
-
-        .five-transition.is-opening .five-right {
-            transform: translateX(108%) skewX(7deg);
-        }
-
-        .five-transition.is-opening .five-center {
-            opacity: 1;
-            animation: fiveCenterOpen .68s cubic-bezier(.16,1,.3,1) both;
-        }
-
-        .five-transition.is-opening .five-beam {
-            opacity: 1;
-            animation: fiveBeamOpen .72s cubic-bezier(.16,1,.3,1) both;
-        }
-
-        .five-transition.is-opening .five-grid {
-            animation: fiveGridOpen .9s cubic-bezier(.16,1,.3,1) both;
-        }
-
-        .five-transition.is-opening .five-caption {
-            animation: fiveCaptionOpen .68s .05s cubic-bezier(.16,1,.3,1) both;
-        }
-
-        .five-transition.is-closing .five-left {
-            animation: fiveLeftClose .62s cubic-bezier(.76,0,.24,1) both;
-        }
-
-        .five-transition.is-closing .five-right {
-            animation: fiveRightClose .62s cubic-bezier(.76,0,.24,1) both;
-        }
-
-        .five-transition.is-closing .five-center {
-            opacity: 1;
-            animation: fiveCenterClose .58s cubic-bezier(.16,1,.3,1) both;
-        }
-
-        .five-transition.is-closing .five-beam {
-            opacity: 1;
-            animation: fiveBeamClose .58s cubic-bezier(.16,1,.3,1) both;
-        }
-
-        .five-transition.is-closing .five-grid {
-            animation: fiveGridClose .62s cubic-bezier(.16,1,.3,1) both;
-        }
-
-        .five-transition.is-closing .five-caption {
-            animation: fiveCaptionClose .42s cubic-bezier(.76,0,.24,1) both;
-        }
-
-        @keyframes fiveLeftClose {
-            from { transform: translateX(-108%) skewX(-7deg); }
-            to { transform: translateX(0) skewX(-7deg); }
-        }
-
-        @keyframes fiveRightClose {
-            from { transform: translateX(108%) skewX(7deg); }
-            to { transform: translateX(0) skewX(7deg); }
-        }
-
-        @keyframes fiveCenterOpen {
-            0% { transform: translate(-50%,-50%) scaleY(.8); }
-            35% { transform: translate(-50%,-50%) scaleY(1); }
-            100% { transform: translate(-50%,-50%) scaleY(0); opacity: 0; }
-        }
-
-        @keyframes fiveCenterClose {
-            from { transform: translate(-50%,-50%) scaleY(0); }
-            to { transform: translate(-50%,-50%) scaleY(1); }
-        }
-
-        @keyframes fiveBeamOpen {
-            0% { transform: translate(-50%,-50%) scaleX(1); opacity: 1; }
-            100% { transform: translate(-50%,-50%) scaleX(.03); opacity: 0; }
-        }
-
-        @keyframes fiveBeamClose {
-            from { transform: translate(-50%,-50%) scaleX(.03); }
-            to { transform: translate(-50%,-50%) scaleX(1); }
-        }
-
-        @keyframes fiveGridOpen {
-            from { opacity: .28; transform: scale(1); }
-            to { opacity: 0; transform: scale(1.16); }
-        }
-
-        @keyframes fiveGridClose {
-            from { opacity: 0; transform: scale(1.16); }
-            to { opacity: .28; transform: scale(1); }
-        }
-
-        @keyframes fiveCaptionOpen {
-            0% { opacity: 0; transform: translate(-50%,-50%) scale(.92); letter-spacing: .48em; }
-            35% { opacity: 1; }
-            100% { opacity: 0; transform: translate(-50%,-50%) scale(1.04); letter-spacing: .34em; }
-        }
-
-        @keyframes fiveCaptionClose {
-            from { opacity: 0; transform: translate(-50%,-50%) scale(1.08); }
-            to { opacity: .9; transform: translate(-50%,-50%) scale(1); }
-        }
-
-        body.five-page-exit {
-            overflow: hidden;
-        }
-
-        body.five-page-exit > *:not(.five-transition) {
-            animation: fivePageExit .5s cubic-bezier(.76,0,.24,1) both;
-        }
-
-        @keyframes fivePageExit {
-            to {
-                opacity: 0;
-                transform: translate3d(0,-22px,0) scale(.97);
-                filter: blur(7px) brightness(.7);
-            }
+        @keyframes fiveContentExit {
+            to { opacity: 0; transform: translateY(-18px) scale(.985); filter: blur(5px); }
         }
     `;
     document.head.appendChild(style);
 
     const overlay = document.createElement('div');
-    overlay.className = 'five-transition is-opening';
-    overlay.innerHTML = `
-        <div class="five-shutter five-left"></div>
-        <div class="five-shutter five-right"></div>
-        <div class="five-grid"></div>
-        <div class="five-center"></div>
-        <div class="five-beam"></div>
-        <div class="five-caption"><b>05</b> / 5DRAGONS ACADEMY</div>
-    `;
+    overlay.className = 'five-transition';
+    overlay.innerHTML = '<div class="scan"></div><div class="line"></div><div class="logo-mark">05 / 5DRAGONS</div>';
     document.body.appendChild(overlay);
 
+    // KLUCZ: startujemy zamknięciem, a dopiero w następnej klatce otwieramy.
     requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            overlay.classList.add('is-opening');
-        });
+        overlay.classList.add('opening');
+        setTimeout(() => overlay.remove(), 850);
     });
 
     document.addEventListener('click', event => {
@@ -1135,39 +984,23 @@ function pageTransitions() {
         if (!link) return;
 
         const href = link.getAttribute('href');
-        if (
-            !href ||
-            href.startsWith('#') ||
-            href.startsWith('mailto:') ||
-            href.startsWith('tel:') ||
-            link.target === '_blank' ||
-            event.ctrlKey ||
-            event.metaKey ||
-            event.shiftKey ||
-            event.altKey
-        ) return;
+        if (!href || href.startsWith('#') || href.startsWith('mailto:') ||
+            href.startsWith('tel:') || link.target === '_blank' ||
+            event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
 
         let url;
-        try {
-            url = new URL(href, location.href);
-        } catch {
-            return;
-        }
-
-        if (
-            url.origin !== location.origin ||
-            (url.pathname === location.pathname && url.search === location.search)
-        ) return;
+        try { url = new URL(href, location.href); } catch { return; }
+        if (url.origin !== location.origin ||
+            (url.pathname === location.pathname && url.search === location.search)) return;
 
         event.preventDefault();
 
-        overlay.classList.remove('is-opening');
-        overlay.classList.add('is-closing');
-        document.body.classList.add('five-page-exit');
+        overlay.className = 'five-transition closing';
+        document.body.classList.add('five-exit');
 
         setTimeout(() => {
             location.href = url.href;
-        }, 610);
+        }, 650);
     });
 }
 
