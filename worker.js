@@ -322,126 +322,7 @@ const GENERIC_TABLES = {
     recruitmentApplications: "recruitment_applications"
 };
 
-
-async function ensurePlayerFaceitColumns(env) {
-    const columns = await getTableColumns(env, "players");
-    const additions = [
-        ["faceit_player_id", "TEXT"],
-        ["faceit_nickname", "TEXT"],
-        ["faceit_level", "INTEGER"],
-        ["faceit_elo", "INTEGER"],
-        ["faceit_url", "TEXT"],
-        ["faceit_updated_at", "TEXT"]
-    ];
-
-    for (const [name, type] of additions) {
-        if (!columns.includes(name)) {
-            try {
-                await env.DB.prepare(`ALTER TABLE players ADD COLUMN ${name} ${type}`).run();
-            } catch {}
-        }
-    }
-}
-
-async function syncFaceitPlayer(env, player) {
-    if (!env.FACEIT_API_KEY) {
-        throw new Error("Brak FACEIT_API_KEY w Cloudflare Worker.");
-    }
-
-    await ensurePlayerFaceitColumns(env);
-
-    const nickname = String(player.faceit_nickname || player.faceit || player.nick || "").trim();
-    if (!nickname) {
-        throw new Error("Zawodnik nie ma ustawionego nicku FACEIT.");
-    }
-
-    const endpoint = "https://open.faceit.com/data/v4/players?nickname=" +
-        encodeURIComponent(nickname) + "&game=cs2";
-
-    const response = await fetch(endpoint, {
-        headers: {
-            "Authorization": `Bearer ${env.FACEIT_API_KEY}`,
-            "Accept": "application/json"
-        }
-    });
-
-    let data = {};
-    try {
-        data = await response.json();
-    } catch {}
-
-    if (!response.ok) {
-        if (response.status === 404) {
-            throw new Error("Nie znaleziono tego gracza na FACEIT dla CS2.");
-        }
-        if (response.status === 401 || response.status === 403) {
-            throw new Error("FACEIT API odrzuciło klucz API.");
-        }
-        if (response.status === 429) {
-            throw new Error("FACEIT API ograniczyło liczbę zapytań. Spróbuj później.");
-        }
-        throw new Error(data?.message || `FACEIT API zwróciło HTTP ${response.status}.`);
-    }
-
-    const game = data?.games?.cs2 || data?.games?.csgo;
-    if (!game) {
-        throw new Error("FACEIT nie zwróciło danych CS2 dla tego gracza.");
-    }
-
-    const update = {
-        faceit_player_id: data.player_id || null,
-        faceit_nickname: data.nickname || nickname,
-        faceit_level: Number(game.skill_level || 0),
-        faceit_elo: Number(game.faceit_elo || 0),
-        faceit_url: data.faceit_url || player.faceit_url || null,
-        faceit_updated_at: new Date().toISOString()
-    };
-
-    await dynamicUpdate(env, "players", player.id, update);
-
-    return {
-        ...update,
-        skill_level_label: game.skill_level_label || `Level ${game.skill_level || 0}`
-    };
-}
-
-async function syncAllFaceitPlayers(env) {
-    if (!env.FACEIT_API_KEY) {
-        return { synced: 0, skipped: true };
-    }
-
-    await ensurePlayerFaceitColumns(env);
-
-    const result = await env.DB.prepare(`
-        SELECT *
-        FROM players
-        WHERE status = 'ACTIVE'
-        ORDER BY id ASC
-    `).all();
-
-    let synced = 0;
-
-    for (const player of (result.results || [])) {
-        try {
-            await syncFaceitPlayer(env, player);
-            synced++;
-        } catch {
-            // Jeden błędny nick nie może zatrzymać aktualizacji pozostałych zawodników.
-        }
-    }
-
-    return {
-        synced,
-        total: (result.results || []).length,
-        skipped: false
-    };
-}
-
 export default {
-    async scheduled(controller, env) {
-        await syncAllFaceitPlayers(env);
-    },
-
     async fetch(request, env) {
         try {
             const url = new URL(request.url);
@@ -863,72 +744,6 @@ ${message}
             }
 
             /*
-             * FACEIT SYNC
-             *
-             * POST /api/players/:id/faceit
-             * Pobiera aktualny level/ELO bezpośrednio z FACEIT Data API.
-             */
-            if (
-                method === "POST" &&
-                parts[1] === "players" &&
-                parts[3] === "faceit" &&
-                parts[2] &&
-                /^\d+$/.test(parts[2])
-            ) {
-                const admin = await requireAdmin(request, env);
-                if (!admin.ok) return admin.response;
-
-                const playerId = Number(parts[2]);
-                await ensurePlayerFaceitColumns(env);
-
-                const player = await env.DB.prepare(`
-                    SELECT *
-                    FROM players
-                    WHERE id = ?
-                    LIMIT 1
-                `).bind(playerId).first();
-
-                if (!player) {
-                    return errorResponse(request, "Nie znaleziono zawodnika.", 404);
-                }
-
-                try {
-                    const faceit = await syncFaceitPlayer(env, player);
-                    return json(request, {
-                        success: true,
-                        message: "FACEIT został zaktualizowany.",
-                        faceit
-                    });
-                } catch (error) {
-                    return errorResponse(request, error.message || "Nie udało się pobrać danych FACEIT.", 400);
-                }
-            }
-
-            /*
-             * FACEIT BULK SYNC
-             *
-             * POST /api/faceit/sync
-             * Ręczne odświeżenie wszystkich aktywnych zawodników.
-             */
-            if (method === "POST" && url.pathname === "/api/faceit/sync") {
-                const admin = await requireAdmin(request, env);
-                if (!admin.ok) return admin.response;
-
-                try {
-                    const result = await syncAllFaceitPlayers(env);
-                    return json(request, {
-                        success: true,
-                        message: result.skipped
-                            ? "FACEIT_API_KEY nie jest jeszcze skonfigurowany."
-                            : `Zaktualizowano ${result.synced} z ${result.total} zawodników.`,
-                        ...result
-                    });
-                } catch (error) {
-                    return errorResponse(request, error.message || "Nie udało się zaktualizować FACEIT.", 500);
-                }
-            }
-
-            /*
              * PLAYERS
              */
             if (parts[1] === "players") {
@@ -1067,7 +882,7 @@ ${message}
                     const result = await env.DB.prepare(`
                         SELECT *
                         FROM news
-                        WHERE status = 'PUBLISHED' OR status IS NULL
+                        WHERE status = 'PUBLISHED'
                         ORDER BY
                             COALESCE(published_at, created_at) DESC,
                             id DESC
@@ -1111,19 +926,10 @@ ${message}
                         );
                     }
 
-                    const newsColumns = await getTableColumns(env, "news");
-                    const publishData = { ...body };
-                    if (newsColumns.includes("status") && !publishData.status) {
-                        publishData.status = "PUBLISHED";
-                    }
-                    if (newsColumns.includes("published_at") && !publishData.published_at) {
-                        publishData.published_at = new Date().toISOString();
-                    }
-
                     const result = await dynamicInsert(
                         env,
                         "news",
-                        publishData
+                        body
                     );
 
                     return json(request, {
@@ -1290,25 +1096,10 @@ ${message}
                         );
                     }
 
-                    // Backend również mapuje nazwę pola CS2, aby cache starego frontendu
-                    // nie powodował błędu NOT NULL w D1.
-                    const application = { ...body };
-                    if (!application.cs2_nick && application.cs2) {
-                        application.cs2_nick = application.cs2;
-                    }
-                    delete application.cs2;
-
-                    if (!String(application.cs2_nick || "").trim()) {
-                        return errorResponse(
-                            request,
-                            "CS2 nickname jest wymagany."
-                        );
-                    }
-
                     const result = await dynamicInsert(
                         env,
                         "recruitment_applications",
-                        application
+                        body
                     );
 
                     return json(request, {
@@ -1656,7 +1447,7 @@ ${message}
                     requestedPath &&
                     !requestedPath.includes("..") &&
                     /^[a-zA-Z0-9_./-]+$/.test(requestedPath) &&
-                    /\.(html|css|js|png|jpg|jpeg|webp|gif|svg|ico|avif|woff2?|ttf|json)$/i.test(requestedPath)
+                    /\\.(html|css|js|png|jpg|jpeg|webp|gif|svg|ico|avif|woff2?|ttf|json)$/i.test(requestedPath)
                 ) {
                     const rawUrl = "https://raw.githubusercontent.com/matkosmo27-byte/5DRAGONS/main/" + requestedPath;
                     const assetResponse = await fetch(rawUrl, {
@@ -1665,27 +1456,6 @@ ${message}
 
                     if (assetResponse.ok) {
                         const headers = new Headers(assetResponse.headers);
-                        const contentTypes = {
-                            "html": "text/html; charset=UTF-8",
-                            "css": "text/css; charset=UTF-8",
-                            "js": "application/javascript; charset=UTF-8",
-                            "json": "application/json; charset=UTF-8",
-                            "svg": "image/svg+xml",
-                            "png": "image/png",
-                            "jpg": "image/jpeg",
-                            "jpeg": "image/jpeg",
-                            "webp": "image/webp",
-                            "gif": "image/gif",
-                            "ico": "image/x-icon",
-                            "avif": "image/avif",
-                            "woff": "font/woff",
-                            "woff2": "font/woff2",
-                            "ttf": "font/ttf"
-                        };
-                        const extension = requestedPath.split(".").pop().toLowerCase();
-                        if (contentTypes[extension]) {
-                            headers.set("Content-Type", contentTypes[extension]);
-                        }
                         headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
                         headers.set("X-5DRAGONS-Frontend", "github-main");
                         return new Response(method === "HEAD" ? null : assetResponse.body, {
