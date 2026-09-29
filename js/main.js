@@ -859,13 +859,97 @@ function formatArticleContent(value) {
    CINEMATIC NAVIGATION TRANSITIONS
 ========================================================= */
 function pageTransitions() {
+    /*
+     * Przejście jest celowo budowane tutaj, a nie tylko w animations.css.
+     * Dzięki temu działa również wtedy, gdy CDN ma starą wersję CSS.
+     */
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return;
+    }
+
+    const style = document.createElement('style');
+    style.textContent = `
+        .five-transition {
+            position: fixed;
+            inset: 0;
+            z-index: 2147483647;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 50% 45%, rgba(229,9,20,.18), transparent 38%),
+                linear-gradient(135deg, #080809 0%, #050506 55%, #0d090a 100%);
+            opacity: 1;
+            visibility: visible;
+            transform: scaleY(1);
+            transform-origin: top;
+            transition:
+                opacity .62s cubic-bezier(.16,1,.3,1),
+                transform .72s cubic-bezier(.76,0,.24,1);
+            overflow: hidden;
+        }
+        .five-transition::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent 0 5px,
+                    rgba(255,255,255,.028) 6px
+                );
+            opacity: .65;
+        }
+        .five-transition::after {
+            content: "";
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            top: 50%;
+            height: 2px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(229,9,20,.2) 15%,
+                #e50914 38%,
+                #fff 50%,
+                #e50914 62%,
+                rgba(229,9,20,.2) 85%,
+                transparent
+            );
+            box-shadow: 0 0 32px rgba(229,9,20,.65);
+            transform: scaleX(.2);
+            transform-origin: center;
+            transition: transform .55s cubic-bezier(.16,1,.3,1);
+        }
+        .five-transition.is-opening {
+            opacity: 0;
+            transform: scaleY(0);
+            transform-origin: bottom;
+        }
+        .five-transition.is-opening::after {
+            transform: scaleX(1);
+        }
+        body.five-page-exit {
+            overflow: hidden;
+            transition:
+                opacity .42s cubic-bezier(.76,0,.24,1),
+                transform .42s cubic-bezier(.76,0,.24,1),
+                filter .42s cubic-bezier(.76,0,.24,1);
+            opacity: .05;
+            transform: translateY(-12px) scale(.985);
+            filter: blur(4px);
+        }
+    `;
+    document.head.appendChild(style);
+
     const overlay = document.createElement('div');
-    overlay.className = 'page-transition is-active';
+    overlay.className = 'five-transition';
     document.body.appendChild(overlay);
 
+    // Wejście na stronę: kurtyna naprawdę schodzi z ekranu.
     requestAnimationFrame(() => {
-        setTimeout(() => overlay.classList.add('is-leaving'), 70);
-        setTimeout(() => overlay.remove(), 760);
+        requestAnimationFrame(() => {
+            overlay.classList.add('is-opening');
+        });
     });
 
     document.addEventListener('click', event => {
@@ -873,19 +957,39 @@ function pageTransitions() {
         if (!link) return;
 
         const href = link.getAttribute('href');
-        if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') ||
-            link.target === '_blank' || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        if (
+            !href ||
+            href.startsWith('#') ||
+            href.startsWith('mailto:') ||
+            href.startsWith('tel:') ||
+            link.target === '_blank' ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey ||
+            event.altKey
+        ) return;
 
         let url;
-        try { url = new URL(href, location.href); } catch { return; }
-        if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
+        try {
+            url = new URL(href, location.href);
+        } catch {
+            return;
+        }
+
+        if (
+            url.origin !== location.origin ||
+            (url.pathname === location.pathname && url.search === location.search)
+        ) return;
 
         event.preventDefault();
-        overlay.classList.remove('is-leaving');
-        overlay.classList.add('is-active');
-        document.body.classList.add('page-exit');
 
-        setTimeout(() => { location.href = url.href; }, 520);
+        // Pełna kurtyna + wygaszenie aktualnej strony.
+        overlay.classList.remove('is-opening');
+        document.body.classList.add('five-page-exit');
+
+        setTimeout(() => {
+            location.href = url.href;
+        }, 520);
     });
 }
 
