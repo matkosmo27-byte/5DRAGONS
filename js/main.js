@@ -860,10 +860,15 @@ function formatArticleContent(value) {
 ========================================================= */
 function pageTransitions() {
     const overlay = document.createElement('div');
-    overlay.className = 'page-transition';
+    overlay.className = 'page-transition is-active';
     document.body.appendChild(overlay);
 
-    const links = $('a[href]');
+    requestAnimationFrame(() => {
+        setTimeout(() => overlay.classList.add('is-leaving'), 70);
+        setTimeout(() => overlay.remove(), 760);
+    });
+
+    const links = $$('a[href]');
     links.forEach(link => {
         link.addEventListener('click', event => {
             const href = link.getAttribute('href');
@@ -872,22 +877,14 @@ function pageTransitions() {
 
             let url;
             try { url = new URL(href, location.href); } catch { return; }
-            if (url.origin !== location.origin || url.pathname === location.pathname && url.search === location.search) return;
+            if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
 
             event.preventDefault();
+            overlay.classList.remove('is-leaving');
+            overlay.classList.add('is-active');
+            document.body.classList.add('page-exit');
 
-            if (document.startViewTransition) {
-                overlay.classList.add('is-active');
-                setTimeout(() => {
-                    document.startViewTransition(() => {
-                        location.href = url.href;
-                    });
-                }, 180);
-            } else {
-                overlay.classList.add('is-active');
-                document.body.classList.add('page-exit');
-                setTimeout(() => { location.href = url.href; }, 460);
-            }
+            setTimeout(() => { location.href = url.href; }, 520);
         });
     });
 }
