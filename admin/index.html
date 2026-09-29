@@ -35,37 +35,42 @@ async function editById(type,id){
 }
 async function editItem(type,item){
     if(type==="player"){
-        const source=$("#playerForm");
-        if(!source){toast("Nie znaleziono formularza zawodnika.");return}
         const modal=document.createElement("div");
         modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);z-index:50;overflow:auto;padding:30px";
         const card=document.createElement("div");
         card.style.cssText="max-width:900px;margin:30px auto;background:#0d0d0f;border:1px solid #242428;border-radius:15px;padding:22px";
-        const head=document.createElement("div");
-        head.style.cssText="display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px";
-        const title=document.createElement("h2");
-        title.textContent="Edytuj zawodnika";
-        title.style.margin="0";
-        const close=document.createElement("button");
-        close.type="button";
-        close.className="btn secondary";
-        close.textContent="✕ Zamknij";
-        head.append(title,close);
-        const form=source.cloneNode(true);
-        form.id="editPlayerForm";
-        form.classList.remove("hidden");
-        form.querySelector("button[type=submit]").textContent="Zapisz zmiany";
-        form.querySelectorAll("[name]").forEach(input=>{
-            const key=input.name;
-            if(key in item) input.value=item[key]??"";
-        });
-        card.append(head,form);
+        card.innerHTML=`
+            <div class="head">
+                <h2>Edytuj zawodnika</h2>
+                <button type="button" class="btn secondary" id="closeEditPlayer">✕ Zamknij</button>
+            </div>
+            <form id="editPlayerForm" class="form">
+                <div class="field"><label>Nick</label><input name="nick" required></div>
+                <div class="field"><label>Imię i nazwisko</label><input name="name"></div>
+                <div class="field"><label>Rola CS2</label><select name="role"><option>RIFLER</option><option>ENTRY FRAGGER</option><option>LURKER</option><option>AWPER</option><option>IGL</option><option>SUPPORT</option><option>ANCHOR</option><option>ROTATOR</option></select></div>
+                <div class="field"><label>Team</label><select name="team"><option>MAIN</option><option>ACADEMY</option></select></div>
+                <div class="field"><label>Nick FACEIT</label><input name="faceit_nickname" placeholder="Nick na FACEIT"></div>
+                <div class="field"><label>FACEIT Level</label><input name="faceit_level" type="number" readonly placeholder="automatycznie"></div>
+                <div class="field"><label>FACEIT Elo</label><input name="faceit_elo" type="number" readonly placeholder="automatycznie"></div>
+                <div class="field"><label>FACEIT URL</label><input name="faceit_url" type="url" readonly placeholder="automatycznie"></div>
+                <div class="field"><label>Steam URL</label><input name="steam_url" type="url"></div>
+                <div class="field full"><label>Zdjęcie / URL</label><input name="photo" type="url"></div>
+                <div class="field full"><label>Opis</label><textarea name="description"></textarea></div>
+                <div><button class="btn" type="submit">Zapisz zmiany</button></div>
+            </form>`;
         modal.append(card);
         document.body.append(modal);
+        const form=card.querySelector("#editPlayerForm");
+        Object.keys(item||{}).forEach(key=>{
+            const input=form.elements[key];
+            if(input) input.value=item[key]??"";
+        });
+        if(form.elements.role) form.elements.role.value=item.role||"RIFLER";
+        if(form.elements.team) form.elements.team.value=item.team||"MAIN";
         const cleanup=()=>modal.remove();
-        close.onclick=cleanup;
+        card.querySelector("#closeEditPlayer").onclick=cleanup;
         modal.addEventListener("click",e=>{if(e.target===modal)cleanup()});
-        form.addEventListener("submit",async e=>{
+        form.onsubmit=async e=>{
             e.preventDefault();
             try{
                 const data=fd(form);
@@ -79,7 +84,7 @@ async function editItem(type,item){
                 toast("Zawodnik zapisany");
                 await loadPlayers();
             }catch(x){toast(x.message||"Nie udało się zapisać zmian.")}
-        });
+        };
         return;
     }
     const configs={
