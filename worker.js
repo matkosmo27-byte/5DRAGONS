@@ -277,6 +277,80 @@ async function dynamicInsert(env, tableName, data) {
     return result;
 }
 
+async function syncFaceitPlayer(env, player) {
+    if (!env.FACEIT_API_KEY) {
+        throw new Error("Brak konfiguracji FACEIT_API_KEY w Workerze.");
+    }
+
+    const nickname = String(player.faceit_nickname || "").trim();
+    const playerId = String(player.faceit_player_id || "").trim();
+
+    if (!nickname && !playerId) {
+        throw new Error("Zawodnik nie ma ustawionego Nicku FACEIT.");
+    }
+
+    const headers = {
+        "Authorization": `Bearer ${env.FACEIT_API_KEY}`,
+        "Accept": "application/json",
+        "User-Agent": "5DRAGONS-Worker"
+    };
+
+    let faceitPlayer = null;
+
+    if (playerId) {
+        const byId = await fetch(
+            `https://open.faceit.com/data/v4/players/${encodeURIComponent(playerId)}`,
+            { headers }
+        );
+
+        if (byId.ok) {
+            faceitPlayer = await byId.json();
+        } else if (byId.status !== 404) {
+            const details = await byId.text();
+            throw new Error(`FACEIT API HTTP ${byId.status}${details ? ": " + details.slice(0, 180) : ""}`);
+        }
+    }
+
+    if (!faceitPlayer && nickname) {
+        const searchUrl =
+            "https://open.faceit.com/data/v4/players?nickname=" +
+            encodeURIComponent(nickname) +
+            "&game=cs2";
+
+        const response = await fetch(searchUrl, { headers });
+
+        if (!response.ok) {
+            const details = await response.text();
+            throw new Error(`FACEIT API HTTP ${response.status}${details ? ": " + details.slice(0, 180) : ""}`);
+        }
+
+        faceitPlayer = await response.json();
+    }
+
+    if (!faceitPlayer || !faceitPlayer.player_id) {
+        throw new Error(`Nie znaleziono zawodnika FACEIT: ${nickname || playerId}`);
+    }
+
+    const cs2 = faceitPlayer.games?.cs2;
+
+    if (!cs2) {
+        throw new Error("FACEIT nie zwrócił danych CS2 dla tego zawodnika.");
+    }
+
+    const update = {
+        faceit_player_id: faceitPlayer.player_id,
+        faceit_nickname: faceitPlayer.nickname || nickname,
+        faceit_level: Number(cs2.skill_level || 0),
+        faceit_elo: Number(cs2.faceit_elo || 0),
+        faceit_url: faceitPlayer.faceit_url || null,
+        faceit_updated_at: new Date().toISOString()
+    };
+
+    await dynamicUpdate(env, "players", player.id, update);
+
+    return update;
+}
+
 async function dynamicUpdate(env, tableName, id, data) {
     const columns = await getTableColumns(env, tableName);
 
