@@ -12,5 +12,10 @@
       "database_name": "5dragons-db",
       "database_id": "917c861d-6672-4ee8-bd05-fd30e71bc3d7"
     }
-  ]
+  ],
+  "triggers": {
+    "crons": [
+      "0 */6 * * *"
+    ]
+  }
 }
