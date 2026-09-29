@@ -1443,6 +1443,24 @@ ${message}
                     ? "index.html"
                     : url.pathname.replace(/^\/+/, "");
 
+                if (url.pathname === "/") {
+                    const rawUrl = "https://raw.githubusercontent.com/matkosmo27-byte/5DRAGONS/main/index.html";
+                    const assetResponse = await fetch(rawUrl, {
+                        headers: { "User-Agent": "5DRAGONS-Worker" }
+                    });
+
+                    if (assetResponse.ok) {
+                        const headers = new Headers(assetResponse.headers);
+                        headers.set("Content-Type", "text/html; charset=UTF-8");
+                        headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+                        headers.set("X-5DRAGONS-Frontend", "github-main");
+                        return new Response(method === "HEAD" ? null : assetResponse.body, {
+                            status: assetResponse.status,
+                            headers
+                        });
+                    }
+                }
+
                 if (
                     requestedPath &&
                     !requestedPath.includes("..") &&
