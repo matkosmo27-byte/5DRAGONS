@@ -1447,7 +1447,7 @@ ${message}
                     requestedPath &&
                     !requestedPath.includes("..") &&
                     /^[a-zA-Z0-9_./-]+$/.test(requestedPath) &&
-                    /\.(html|css|js|png|jpg|jpeg|webp|gif|svg|ico|avif|woff2?|ttf|json)$/i.test(requestedPath)
+                    /\\.(html|css|js|png|jpg|jpeg|webp|gif|svg|ico|avif|woff2?|ttf|json)$/i.test(requestedPath)
                 ) {
                     const rawUrl = "https://raw.githubusercontent.com/matkosmo27-byte/5DRAGONS/main/" + requestedPath;
                     const assetResponse = await fetch(rawUrl, {
@@ -1456,27 +1456,6 @@ ${message}
 
                     if (assetResponse.ok) {
                         const headers = new Headers(assetResponse.headers);
-                        const contentTypes = {
-                            "html": "text/html; charset=UTF-8",
-                            "css": "text/css; charset=UTF-8",
-                            "js": "application/javascript; charset=UTF-8",
-                            "json": "application/json; charset=UTF-8",
-                            "svg": "image/svg+xml",
-                            "png": "image/png",
-                            "jpg": "image/jpeg",
-                            "jpeg": "image/jpeg",
-                            "webp": "image/webp",
-                            "gif": "image/gif",
-                            "ico": "image/x-icon",
-                            "avif": "image/avif",
-                            "woff": "font/woff",
-                            "woff2": "font/woff2",
-                            "ttf": "font/ttf"
-                        };
-                        const extension = requestedPath.split(".").pop().toLowerCase();
-                        if (contentTypes[extension]) {
-                            headers.set("Content-Type", contentTypes[extension]);
-                        }
                         headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
                         headers.set("X-5DRAGONS-Frontend", "github-main");
                         return new Response(method === "HEAD" ? null : assetResponse.body, {
