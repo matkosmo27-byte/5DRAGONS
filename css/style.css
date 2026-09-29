@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 :root{
   --bg:#020203;--bg2:#070709;--panel:#0a0a0d;--panel2:#0f1014;
@@ -9,7 +9,7 @@
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;background:var(--bg)}
-body{margin:0;min-height:100vh;color:var(--text);font-family:Manrope,Arial,sans-serif;background:
+body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,Arial,sans-serif;background:
 radial-gradient(900px 500px at 85% 0%,rgba(229,9,20,.11),transparent 65%),
 radial-gradient(700px 500px at -10% 55%,rgba(255,255,255,.025),transparent 65%),
 linear-gradient(180deg,#050507 0%,#020203 52%,#050507 100%);overflow-x:hidden}
@@ -197,52 +197,4 @@ linear-gradient(120deg,rgba(255,255,255,.025),transparent 38%);opacity:.9;transi
   .principle span{font-size:11px}
   .stat-strip>div{min-height:95px}
   .stat-strip strong{font-size:31px}
-}
-
-
-/* HOME FINAL TYPE + SPACING PASS */
-.home-hero .tag{font-size:9px;letter-spacing:.15em;padding:9px 13px}
-.home-hero h1{font-weight:700;line-height:.9;letter-spacing:-.055em;margin:32px 0 28px}
-.home-hero p{font-size:16px;line-height:1.85;max-width:700px;color:#aeb1ba}
-.home-hero .hero-actions{margin-top:38px;gap:14px}
-.home-hero .hero-meta{margin-top:34px;gap:12px;max-width:820px}
-.home-hero .hero-meta span{justify-content:flex-start;min-height:48px;padding:0 16px;font-size:9px;font-weight:800;letter-spacing:.105em;line-height:1.35}
-.home-intro .section-head{margin-bottom:36px}
-.home-intro .eyebrow,.section .eyebrow{font-size:10px;letter-spacing:.16em;color:#7b7f89;margin-bottom:14px}
-.home-intro .section-head h2,.section-head h2{line-height:1;letter-spacing:-.045em}
-.intro-grid{gap:26px}
-.intro-copy{padding:54px}
-.intro-copy h3{font-size:clamp(31px,3.6vw,50px);line-height:1.06;letter-spacing:-.045em;margin-bottom:26px}
-.intro-copy p{font-size:15px;line-height:1.9;color:#9b9fa8}
-.text-link{margin-top:30px;font-size:10px;letter-spacing:.12em}
-.principles{gap:14px}
-.principle{padding:25px 26px;gap:18px}
-.principle b{font-size:13px;letter-spacing:.12em;margin-bottom:9px}
-.principle span{font-size:13px;line-height:1.65;color:#8f939c}
-.stat-strip>div{padding:30px 32px}
-.stat-strip strong{font-size:40px}
-.stat-strip span{font-size:9px;letter-spacing:.16em}
-.home-stats{padding-top:26px}
-.home-cta .tag{font-size:9px;letter-spacing:.15em}
-.home-cta p{font-size:15px;line-height:1.85}
-@media(max-width:1100px){
-  .home-hero h1{line-height:.93}
-  .intro-copy{padding:42px}
-}
-@media(max-width:620px){
-  .home-hero h1{line-height:.94;letter-spacing:-.05em;margin:26px 0 22px}
-  .home-hero p{font-size:14px;line-height:1.8}
-  .home-hero .hero-actions{margin-top:30px}
-  .home-hero .hero-meta{margin-top:26px;gap:8px}
-  .home-hero .hero-meta span{min-height:44px;font-size:8px;letter-spacing:.11em}
-  .home-intro .section-head{margin-bottom:26px}
-  .home-intro .eyebrow,.section .eyebrow{font-size:9px;letter-spacing:.14em}
-  .intro-copy{padding:30px;min-height:430px}
-  .intro-copy h3{font-size:32px;line-height:1.08;letter-spacing:-.04em}
-  .intro-copy p{font-size:13px;line-height:1.85}
-  .principle{padding:21px;gap:15px}
-  .principle b{font-size:12px}
-  .principle span{font-size:12px;line-height:1.7}
-  .stat-strip strong{font-size:32px}
-  .stat-strip span{font-size:8px}
 }
