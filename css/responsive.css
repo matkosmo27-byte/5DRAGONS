@@ -24,7 +24,7 @@
 .mobile-panel{display:none}
 @media(max-width:1100px){
   .nav-inner{position:relative}.links,.nav-join{display:none!important}.mobile-toggle{display:flex}
-  .mobile-panel{display:block;position:fixed;z-index:-1;top:0;right:0;width:min(390px,88vw);height:100vh;padding:105px 28px 32px;background:rgba(6,7,10,.88);border-left:1px solid rgba(255,255,255,.09);backdrop-filter:blur(28px) saturate(145%);-webkit-backdrop-filter:blur(28px) saturate(145%);box-shadow:-30px 0 100px rgba(0,0,0,.55);transform:translateX(105%);visibility:hidden;transition:transform .55s var(--ease),visibility .55s;overflow-y:auto}
+  .mobile-panel{display:block;position:fixed;z-index:1001;top:0;right:0;width:min(390px,88vw);height:100vh;padding:105px 28px 32px;background:rgba(6,7,10,.88);border-left:1px solid rgba(255,255,255,.09);backdrop-filter:blur(28px) saturate(145%);-webkit-backdrop-filter:blur(28px) saturate(145%);box-shadow:-30px 0 100px rgba(0,0,0,.55);transform:translateX(105%);visibility:hidden;transition:transform .55s var(--ease),visibility .55s;overflow-y:auto}
   .mobile-panel:before{content:"";position:absolute;top:82px;left:28px;right:28px;height:1px;background:linear-gradient(90deg,var(--red),transparent)}
   .mobile-links{display:flex;flex-direction:column;gap:4px}
   .mobile-links a:not(.btn){padding:14px 12px;color:#898d96;font:800 12px 'Space Grotesk';letter-spacing:.12em;border-bottom:1px solid rgba(255,255,255,.045);transition:color .3s,transform .3s,background .3s}
