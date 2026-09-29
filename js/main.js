@@ -868,24 +868,24 @@ function pageTransitions() {
         setTimeout(() => overlay.remove(), 760);
     });
 
-    const links = $$('a[href]');
-    links.forEach(link => {
-        link.addEventListener('click', event => {
-            const href = link.getAttribute('href');
-            if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') ||
-                link.target === '_blank' || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    document.addEventListener('click', event => {
+        const link = event.target.closest('a[href]');
+        if (!link) return;
 
-            let url;
-            try { url = new URL(href, location.href); } catch { return; }
-            if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') ||
+            link.target === '_blank' || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
 
-            event.preventDefault();
-            overlay.classList.remove('is-leaving');
-            overlay.classList.add('is-active');
-            document.body.classList.add('page-exit');
+        let url;
+        try { url = new URL(href, location.href); } catch { return; }
+        if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
 
-            setTimeout(() => { location.href = url.href; }, 520);
-        });
+        event.preventDefault();
+        overlay.classList.remove('is-leaving');
+        overlay.classList.add('is-active');
+        document.body.classList.add('page-exit');
+
+        setTimeout(() => { location.href = url.href; }, 520);
     });
 }
 
