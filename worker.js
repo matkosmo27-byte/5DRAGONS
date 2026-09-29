@@ -1465,7 +1465,7 @@ ${message}
                     requestedPath &&
                     !requestedPath.includes("..") &&
                     /^[a-zA-Z0-9_./-]+$/.test(requestedPath) &&
-                    /\\.(html|css|js|png|jpg|jpeg|webp|gif|svg|ico|avif|woff2?|ttf|json)$/i.test(requestedPath)
+                    /\.(html|css|js|png|jpg|jpeg|webp|gif|svg|ico|avif|woff2?|ttf|json)$/i.test(requestedPath)
                 ) {
                     const rawUrl = "https://raw.githubusercontent.com/matkosmo27-byte/5DRAGONS/main/" + requestedPath;
                     const assetResponse = await fetch(rawUrl, {
