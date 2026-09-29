@@ -78,20 +78,11 @@ function renderNav() {
                 </a>
 
                 <div class="links">
-                    <a data-nav href="index.html">HOME</a>
-                    <a data-nav href="team.html">TEAM</a>
-                    <a data-nav href="academy.html">ACADEMY</a>
-                    <a data-nav href="matches.html">MATCHES</a>
-                    <a data-nav href="news.html">NEWS</a>
-                    <a data-nav href="recruitment.html">RECRUITMENT</a>
-                    <a data-nav href="about.html">ABOUT</a>
-                    <a data-nav href="contact.html">CONTACT</a>
-                    <a data-nav href="profile.html">PROFILE</a><a data-login-link href="login.html">LOGIN</a>
+                    <a data-nav href="index.html">HOME</a><a data-nav href="team.html">TEAM</a><a data-nav href="academy.html">ACADEMY</a><a data-nav href="matches.html">MATCHES</a><a data-nav href="news.html">NEWS</a><a data-nav href="recruitment.html">RECRUITMENT</a><a data-nav href="about.html">ABOUT</a><a data-nav href="contact.html">CONTACT</a><a data-nav href="profile.html">PROFILE</a><a data-login-link href="login.html">LOGIN</a>
                 </div>
-
-                <a class="btn" href="recruitment.html">
-                    JOIN US
-                </a>
+                <a class="btn nav-join" href="recruitment.html">JOIN US</a>
+                <button class="mobile-toggle" type="button" aria-label="Otwórz menu" aria-expanded="false"><span></span><span></span><span></span></button>
+                <div class="mobile-panel"><div class="mobile-links"><a data-nav href="index.html">HOME</a><a data-nav href="team.html">TEAM</a><a data-nav href="academy.html">ACADEMY</a><a data-nav href="matches.html">MATCHES</a><a data-nav href="news.html">NEWS</a><a data-nav href="recruitment.html">RECRUITMENT</a><a data-nav href="about.html">ABOUT</a><a data-nav href="contact.html">CONTACT</a><a data-nav href="profile.html">PROFILE</a><a data-login-link href="login.html">LOGIN</a><a class="btn" href="recruitment.html">JOIN 5DRAGONS</a></div></div>
 
             </div>
         </nav>
@@ -99,6 +90,24 @@ function renderNav() {
 
     nav();
     updateLoginLink();
+
+    const toggle = $('.mobile-toggle');
+    const panel = $('.mobile-panel');
+    if (toggle && panel) {
+        toggle.addEventListener('click', () => {
+            const open = document.body.classList.toggle('menu-open');
+            toggle.classList.toggle('is-open', open);
+            toggle.setAttribute('aria-expanded', String(open));
+            toggle.setAttribute('aria-label', open ? 'Zamknij menu' : 'Otwórz menu');
+        });
+        $('.mobile-panel a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.body.classList.remove('menu-open');
+                toggle.classList.remove('is-open');
+                toggle.setAttribute('aria-expanded', 'false');
+            });
+        });
+    }
 }
 
 
