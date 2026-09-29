@@ -34,11 +34,55 @@ async function editById(type,id){
     await editItem(type,item);
 }
 async function editItem(type,item){
+    if(type==="player"){
+        const source=$("#playerForm");
+        if(!source){toast("Nie znaleziono formularza zawodnika.");return}
+        const modal=document.createElement("div");
+        modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);z-index:50;overflow:auto;padding:30px";
+        const card=document.createElement("div");
+        card.style.cssText="max-width:900px;margin:30px auto;background:#0d0d0f;border:1px solid #242428;border-radius:15px;padding:22px";
+        const head=document.createElement("div");
+        head.style.cssText="display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px";
+        const title=document.createElement("h2");
+        title.textContent="Edytuj zawodnika";
+        title.style.margin="0";
+        const close=document.createElement("button");
+        close.type="button";
+        close.className="btn secondary";
+        close.textContent="✕ Zamknij";
+        head.append(title,close);
+        const form=source.cloneNode(true);
+        form.id="editPlayerForm";
+        form.classList.remove("hidden");
+        form.querySelector("button[type=submit]").textContent="Zapisz zmiany";
+        form.querySelectorAll("[name]").forEach(input=>{
+            const key=input.name;
+            if(key in item) input.value=item[key]??"";
+        });
+        card.append(head,form);
+        modal.append(card);
+        document.body.append(modal);
+        const cleanup=()=>modal.remove();
+        close.onclick=cleanup;
+        modal.addEventListener("click",e=>{if(e.target===modal)cleanup()});
+        form.addEventListener("submit",async e=>{
+            e.preventDefault();
+            try{
+                const data=fd(form);
+                delete data.faceit_level;
+                delete data.faceit_elo;
+                delete data.faceit_url;
+                delete data.faceit_player_id;
+                delete data.faceit_updated_at;
+                await api("/api/players/"+item.id,{method:"PATCH",body:JSON.stringify(data)});
+                cleanup();
+                toast("Zawodnik zapisany");
+                await loadPlayers();
+            }catch(x){toast(x.message||"Nie udało się zapisać zmian.")}
+        });
+        return;
+    }
     const configs={
-        player:[
-            ["nick","Nick"],["name","Imię i nazwisko"],["role","Rola CS2"],["team","Team"],
-            ["faceit_nickname","Nick FACEIT"],["steam_url","Steam URL"],["photo","Zdjęcie / URL"],["description","Opis"]
-        ],
         match:[
             ["opponent","Przeciwnik"],["opponent_logo","Logo przeciwnika"],["date","Data"],["time","Godzina"],
             ["competition","Rozgrywki"],["map","Mapa"],["format","Format"],["status","Status"],
@@ -55,12 +99,12 @@ async function editItem(type,item){
             ["title","Tytuł"],["year","Rok"],["description","Opis"]
         ]
     };
-    const endpoints={player:"/api/players/",match:"/api/matches/",news:"/api/news/",recruitment:"/api/recruitment/",achievement:"/api/achievements/"};
+    const endpoints={match:"/api/matches/",news:"/api/news/",recruitment:"/api/recruitment/",achievement:"/api/achievements/"};
     const fields=configs[type]||[];
     const data={};
     for(const [key,label] of fields){
         const current=item[key] ?? "";
-        const value=prompt(label+"\n\nAktualna wartość: "+current,current);
+        const value=prompt(label+"\\n\\nAktualna wartość: "+current,current);
         if(value===null)return;
         data[key]=value;
     }
@@ -72,7 +116,7 @@ async function editItem(type,item){
     try{
         await api(endpoints[type]+item.id,{method:"PATCH",body:JSON.stringify(data)});
         toast("Zmiany zapisane");
-        await ({player:loadPlayers,match:loadMatches,news:loadNews,recruitment:loadRecruitment,achievement:loadAchievements}[type])();
+        await ({match:loadMatches,news:loadNews,recruitment:loadRecruitment,achievement:loadAchievements}[type])();
     }catch(e){toast(e.message||"Nie udało się zapisać zmian.")}
 }
 async function del(p,cb){if(!confirm("Usunąć ten element?"))return;try{await api(p,{method:"DELETE"});toast("Usunięto");await cb()}catch(e){toast(e.message||"Nie udało się usunąć elementu.")}}function bind(id,path,cb){$("#"+id).onsubmit=async e=>{e.preventDefault();try{const data=fd(e.target);if(id==="newsForm"){const image=await uploadFile($("#newsImageFile"),"news");if(image)data.image=image}await api(path,{method:"POST",body:JSON.stringify(data)});e.target.reset();e.target.classList.add("hidden");toast("Zapisano");cb()}catch(x){toast(x.message)}}}
