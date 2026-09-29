@@ -433,6 +433,14 @@ function recruitment() {
 
         delete data.agreement;
 
+        // Baza używa nazwy cs2_nick, a formularz ma pole cs2.
+        // Mapujemy je przed wysłaniem, żeby INSERT trafił w wymaganą kolumnę.
+        if (data.cs2 !== undefined) {
+            data.cs2_nick = data.cs2;
+            delete data.cs2;
+        }
+
+        // Nazwy pól FACEIT i pozostałych danych pozostają zgodne z API/bazą.
         if (data.faceit !== undefined && data.faceit !== '') {
             data.faceit = Number(data.faceit);
         }
