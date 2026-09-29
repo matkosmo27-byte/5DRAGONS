@@ -1,4 +1,6 @@
-const API_URL = 'https://calm-sunset-b06e.matkosmo27.workers.dev';
+const API_URL = (location.protocol === 'http:' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1'))
+    ? 'https://calm-sunset-b06e.matkosmo27.workers.dev'
+    : '';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
