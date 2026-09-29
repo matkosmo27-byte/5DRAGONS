@@ -1290,10 +1290,25 @@ ${message}
                         );
                     }
 
+                    // Backend również mapuje nazwę pola CS2, aby cache starego frontendu
+                    // nie powodował błędu NOT NULL w D1.
+                    const application = { ...body };
+                    if (!application.cs2_nick && application.cs2) {
+                        application.cs2_nick = application.cs2;
+                    }
+                    delete application.cs2;
+
+                    if (!String(application.cs2_nick || "").trim()) {
+                        return errorResponse(
+                            request,
+                            "CS2 nickname jest wymagany."
+                        );
+                    }
+
                     const result = await dynamicInsert(
                         env,
                         "recruitment_applications",
-                        body
+                        application
                     );
 
                     return json(request, {
