@@ -1,4 +1,4 @@
-const API_URL = 'https://calm-sunset-b06e2e6e.matkosmo27.workers.dev';
+const API_URL = 'https://calm-sunset-b06e.matkosmo27.workers.dev';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
