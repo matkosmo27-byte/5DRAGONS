@@ -1116,6 +1116,19 @@ ${message}
 
                     delete body.cs2;
 
+                    // Formularz wysyła poziom FACEIT jako "faceit",
+                    // natomiast tabela D1 wymaga pola "faceit_level".
+                    if (
+                        (body.faceit_level === undefined || body.faceit_level === null || String(body.faceit_level).trim() === "") &&
+                        body.faceit !== undefined &&
+                        body.faceit !== null &&
+                        String(body.faceit).trim() !== ""
+                    ) {
+                        body.faceit_level = Number(body.faceit);
+                    }
+
+                    delete body.faceit;
+
                     const result = await dynamicInsert(
                         env,
                         "recruitment_applications",
