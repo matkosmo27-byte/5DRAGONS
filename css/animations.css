@@ -51,3 +51,46 @@ body.page-exit>*{animation:pageExit .38s cubic-bezier(.76,0,.24,1) both}
 @keyframes pageOldOut{to{opacity:0;filter:blur(8px);transform:scale(.985)}}
 @keyframes pageNewIn{from{opacity:0;filter:blur(10px);transform:translateY(18px) scale(1.015)}to{opacity:1;filter:none;transform:none}}
 @media (prefers-reduced-motion:reduce){.page-transition,.page-transition.is-active,.page-transition.is-leaving,body.page-exit>*{animation:none!important}::view-transition-old(root),::view-transition-new(root){animation:none!important}}
+
+
+/* =========================================================
+   SCROLL REVEAL + DEPTH
+========================================================= */
+@supports (animation-timeline: view()) {
+  .section,
+  .section-head,
+  .section .card,
+  .section .table-wrap,
+  .article {
+    animation-name: sectionReveal;
+    animation-duration: 1ms;
+    animation-fill-mode: both;
+    animation-timing-function: cubic-bezier(.16,1,.3,1);
+    animation-timeline: view();
+    animation-range: entry 8% cover 28%;
+  }
+
+  .section .card:nth-child(2){animation-range:entry 10% cover 30%}
+  .section .card:nth-child(3){animation-range:entry 12% cover 32%}
+  .section .card:nth-child(4){animation-range:entry 14% cover 34%}
+  .section .card:nth-child(5){animation-range:entry 16% cover 36%}
+  .section .card:nth-child(6){animation-range:entry 18% cover 38%}
+}
+
+@keyframes sectionReveal {
+  from {
+    opacity: .08;
+    transform: translateY(34px) scale(.985);
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Subtle mouse-like depth on interactive cards */
+.card {
+  will-change: transform;
+}
