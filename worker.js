@@ -1096,6 +1096,26 @@ ${message}
                         );
                     }
 
+                    // Formularz może używać pola "cs2" albo "cs2_nick".
+                    // D1 wymaga niepustego cs2_nick, więc normalizujemy dane tutaj,
+                    // niezależnie od wersji frontendu/cache przeglądarki.
+                    if (
+                        (body.cs2_nick === undefined || body.cs2_nick === null || String(body.cs2_nick).trim() === "") &&
+                        body.cs2 !== undefined &&
+                        body.cs2 !== null
+                    ) {
+                        body.cs2_nick = String(body.cs2).trim();
+                    }
+
+                    if (!body.cs2_nick) {
+                        return errorResponse(
+                            request,
+                            "Nick CS2 jest wymagany."
+                        );
+                    }
+
+                    delete body.cs2;
+
                     const result = await dynamicInsert(
                         env,
                         "recruitment_applications",
