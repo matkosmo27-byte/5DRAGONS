@@ -1451,6 +1451,7 @@ ${message}
 
                     if (assetResponse.ok) {
                         const headers = new Headers(assetResponse.headers);
+                        headers.delete("Content-Security-Policy");
                         headers.set("Content-Type", "text/html; charset=UTF-8");
                         headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
                         headers.set("X-5DRAGONS-Frontend", "github-main");
