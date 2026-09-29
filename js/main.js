@@ -1,6 +1,4 @@
-const API_URL = (location.protocol === 'http:' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1'))
-    ? 'https://calm-sunset-b06e.matkosmo27.workers.dev'
-    : '';
+const API_URL = 'https://calm-sunset-b06e.matkosmo27.workers.dev';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -14,7 +12,8 @@ async function api(path, options = {}) {
     const token = localStorage.getItem('5d_token');
 
     const headers = {
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(options.headers || {})
     };
 
