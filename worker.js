@@ -823,6 +823,44 @@ ${message}
             if (parts[1] === "players") {
                 const id = getIdFromPath(parts);
 
+                if (
+                    method === "POST" &&
+                    parts.length === 4 &&
+                    parts[3] === "faceit" &&
+                    id
+                ) {
+                    const admin = await requireAdmin(request, env);
+
+                    if (!admin.ok) {
+                        return admin.response;
+                    }
+
+                    const player = await env.DB.prepare(`
+                        SELECT *
+                        FROM players
+                        WHERE id = ?
+                        LIMIT 1
+                    `)
+                        .bind(id)
+                        .first();
+
+                    if (!player) {
+                        return errorResponse(
+                            request,
+                            "Nie znaleziono zawodnika.",
+                            404
+                        );
+                    }
+
+                    const faceit = await syncFaceitPlayer(env, player);
+
+                    return json(request, {
+                        success: true,
+                        message: "Dane FACEIT zostały zaktualizowane.",
+                        faceit
+                    });
+                }
+
                 if (method === "GET") {
                     if (id) {
                         const player = await env.DB.prepare(`
