@@ -818,6 +818,54 @@ ${message}
             }
 
             /*
+             * FACEIT BULK SYNC
+             */
+            if (
+                method === "POST" &&
+                url.pathname === "/api/faceit/sync"
+            ) {
+                const admin = await requireAdmin(request, env);
+
+                if (!admin.ok) {
+                    return admin.response;
+                }
+
+                const result = await env.DB.prepare(`
+                    SELECT *
+                    FROM players
+                    WHERE status = 'ACTIVE'
+                    ORDER BY id ASC
+                `).all();
+
+                const synced = [];
+                const failed = [];
+
+                for (const player of (result.results || [])) {
+                    try {
+                        const faceit = await syncFaceitPlayer(env, player);
+                        synced.push({
+                            id: player.id,
+                            nick: player.nick,
+                            faceit
+                        });
+                    } catch (error) {
+                        failed.push({
+                            id: player.id,
+                            nick: player.nick,
+                            error: error?.message || "Nie udało się zaktualizować FACEIT."
+                        });
+                    }
+                }
+
+                return json(request, {
+                    success: true,
+                    message: `Zaktualizowano FACEIT: ${synced.length}, błędy: ${failed.length}.`,
+                    synced,
+                    failed
+                });
+            }
+
+            /*
              * PLAYERS
              */
             if (parts[1] === "players") {
