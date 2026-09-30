@@ -1,144 +1,182 @@
-@keyframes heroIn{0%{opacity:0;transform:translate3d(0,42px,0) scale(.96);filter:blur(10px)}45%{opacity:1;transform:translate3d(0,-5px,0) scale(1.01);filter:blur(0)}100%{opacity:1;transform:none;filter:none}}
-@keyframes riseIn{0%{opacity:0;transform:translate3d(0,34px,0) scale(.94);filter:blur(8px)}55%{opacity:1;transform:translate3d(0,-4px,0) scale(1.01);filter:blur(0)}100%{opacity:1;transform:none}}
-@keyframes imageReveal{0%{opacity:0;clip-path:inset(0 100% 0 0);transform:scale(1.08) translateX(24px);filter:brightness(.45) saturate(.55) blur(6px)}55%{opacity:1;clip-path:inset(0 0 0 0);transform:scale(1.025) translateX(0);filter:brightness(.9) saturate(.9) blur(0)}100%{opacity:1;transform:scale(1);filter:brightness(1) saturate(1)}}
-@keyframes textReveal{0%{opacity:0;transform:translate3d(0,20px,0) skewY(3deg);clip-path:inset(100% 0 0 0);filter:blur(5px)}55%{opacity:1;transform:translate3d(0,-2px,0) skewY(0);clip-path:inset(0 0 0 0);filter:blur(0)}100%{opacity:1;transform:none;clip-path:none}}
-@keyframes lineReveal{0%{transform:scaleX(0);transform-origin:left;opacity:0}35%{opacity:1}100%{transform:scaleX(1);transform-origin:left;opacity:1}}
-@keyframes cardGlow{0%,100%{box-shadow:0 12px 45px rgba(0,0,0,.25),0 0 0 rgba(229,9,20,0)}50%{box-shadow:0 18px 55px rgba(0,0,0,.35),0 0 32px rgba(229,9,20,.12)}}
-@keyframes ringFloat{0%,100%{transform:translate3d(0,0,0) rotate(0deg)}50%{transform:translate3d(-18px,14px,0) rotate(1deg)}}
-@keyframes heroFloat{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(10px,-14px,0) scale(1.035)}}
-@keyframes scan{0%{transform:translateY(-120%);opacity:0}15%{opacity:.35}85%{opacity:.08}100%{transform:translateY(650%);opacity:0}}
-@keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(229,9,20,.3)}50%{box-shadow:0 0 0 7px rgba(229,9,20,0)}}
-.hero .container{animation:heroIn 1.05s cubic-bezier(.16,1,.3,1) both}
-.hero:before{animation:ringFloat 11s ease-in-out infinite}
-.hero .container:after{content:"";position:absolute;left:0;right:0;top:-110px;height:1px;background:linear-gradient(90deg,transparent,rgba(229,9,20,.28),transparent);animation:scan 7s linear infinite;pointer-events:none}
-.hero h1,.hero h2,.hero .title{animation:textReveal .9s .12s cubic-bezier(.16,1,.3,1) both}
-.hero p,.hero .lead,.hero .subtitle{animation:textReveal .8s .28s cubic-bezier(.16,1,.3,1) both}
-.hero .btn,.hero a.btn,.hero .actions{animation:riseIn .75s .4s cubic-bezier(.16,1,.3,1) both}
-.tag:before{animation:pulseDot 2.4s ease-in-out infinite}
-.grid .card{position:relative;overflow:hidden;animation:riseIn .85s cubic-bezier(.16,1,.3,1) both}
-.grid .card:before{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,.08) 45%,transparent 55%);transform:translateX(-120%);pointer-events:none;animation:cardSweep 1.2s .35s cubic-bezier(.16,1,.3,1) both}
-@keyframes cardSweep{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
-.grid .card:nth-child(2){animation-delay:.08s}.grid .card:nth-child(3){animation-delay:.16s}.grid .card:nth-child(4){animation-delay:.24s}.grid .card:nth-child(5){animation-delay:.32s}.grid .card:nth-child(6){animation-delay:.4s}
-.grid .card img,.card img{animation:imageReveal 1s .12s cubic-bezier(.16,1,.3,1) both}
-.grid .card h1,.grid .card h2,.grid .card h3,.grid .card h4,.grid .card .card-title,.grid .card .title{animation:textReveal .72s .25s cubic-bezier(.16,1,.3,1) both}
-.grid .card p,.grid .card .muted,.grid .card .meta{animation:textReveal .68s .38s cubic-bezier(.16,1,.3,1) both}
-.section-title,.page-title{position:relative}
-.section-title:after,.page-title:after{content:"";display:block;width:74px;height:2px;margin-top:10px;background:linear-gradient(90deg,#e50914,rgba(229,9,20,0));transform-origin:left;animation:lineReveal .8s .2s cubic-bezier(.16,1,.3,1) both}
-.card:hover{transform:translateY(-8px) scale(1.012);transition:transform .45s cubic-bezier(.16,1,.3,1),box-shadow .45s cubic-bezier(.16,1,.3,1),border-color .45s ease}
-.card:hover img{transform:scale(1.045);transition:transform .7s cubic-bezier(.16,1,.3,1),filter .45s ease;filter:saturate(1.12) contrast(1.05)}
-.nav a{position:relative;transition:color .3s ease,transform .3s cubic-bezier(.16,1,.3,1)}
-.nav a:after{content:"";position:absolute;left:0;bottom:-6px;width:100%;height:1px;background:#e50914;transform:scaleX(0);transform-origin:right;transition:transform .45s cubic-bezier(.16,1,.3,1)}
-.nav a:hover{transform:translateY(-2px)}
-.nav a:hover:after,.nav a.active:after{transform:scaleX(1);transform-origin:left}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+/* 5DRAGONS // PREMIUM MOTION SYSTEM
+   Single animation layer. No page-transition overlay, no duplicate timelines.
+   All motion is decorative and never controls application logic.
+*/
 
-
-/* =========================================================
-   CINEMATIC PAGE TRANSITIONS
-========================================================= */
-@keyframes pageCurtainIn{0%{transform:scaleY(0);transform-origin:bottom;opacity:0}35%{opacity:1}100%{transform:scaleY(1);transform-origin:bottom;opacity:1}}
-@keyframes pageCurtainOut{0%{transform:scaleY(1);transform-origin:top;opacity:1}100%{transform:scaleY(0);transform-origin:top;opacity:1}}
-@keyframes pageFlash{0%{opacity:0;transform:scaleX(.2)}35%{opacity:1;transform:scaleX(1)}100%{opacity:0;transform:scaleX(1)}}
-@keyframes pageGrid{0%{opacity:0;transform:translateY(-100%)}30%{opacity:.5}100%{opacity:0;transform:translateY(100%)}}
-.page-transition{position:fixed;inset:0;z-index:99999;pointer-events:none;display:grid;place-items:center;background:rgba(7,7,9,.96);opacity:0;visibility:hidden;overflow:hidden}
-.page-transition.is-active{visibility:visible;opacity:1;animation:pageCurtainIn .48s cubic-bezier(.76,0,.24,1) both}
-.page-transition.is-active:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 5px,rgba(255,255,255,.025) 6px);animation:pageGrid .65s ease-out both}
-.page-transition.is-active:after{content:"";position:absolute;width:80%;height:2px;background:linear-gradient(90deg,transparent,#e50914 20%,#fff 50%,#e50914 80%,transparent);box-shadow:0 0 30px rgba(229,9,20,.7);animation:pageFlash .55s .08s cubic-bezier(.16,1,.3,1) both}
-.page-transition.is-leaving{animation:pageCurtainOut .62s cubic-bezier(.76,0,.24,1) both}
-body.page-exit>*:not(.page-transition){animation:pageExit .38s cubic-bezier(.76,0,.24,1) both}
-@keyframes pageExit{to{opacity:0;transform:translateY(-10px) scale(.985);filter:blur(4px)}}
-::view-transition-old(root){animation:pageOldOut .38s cubic-bezier(.76,0,.24,1) both}
-::view-transition-new(root){animation:pageNewIn .7s .08s cubic-bezier(.16,1,.3,1) both}
-@keyframes pageOldOut{to{opacity:0;filter:blur(8px);transform:scale(.985)}}
-@keyframes pageNewIn{from{opacity:0;filter:blur(10px);transform:translateY(18px) scale(1.015)}to{opacity:1;filter:none;transform:none}}
-@media (prefers-reduced-motion:reduce){.page-transition,.page-transition.is-active,.page-transition.is-leaving,body.page-exit>*{animation:none!important}::view-transition-old(root),::view-transition-new(root){animation:none!important}}
-
-
-/* =========================================================
-   SCROLL REVEAL + DEPTH
-========================================================= */
-@supports (animation-timeline: view()) {
-  .section,
-  .section-head,
-  .section .card,
-  .section .table-wrap,
-  .article {
-    animation-name: sectionReveal;
-    animation-duration: 1ms;
-    animation-fill-mode: both;
-    animation-timing-function: cubic-bezier(.16,1,.3,1);
-    animation-timeline: view();
-    animation-range: entry 8% cover 28%;
-  }
-
-  .section .card:nth-child(2){animation-range:entry 10% cover 30%}
-  .section .card:nth-child(3){animation-range:entry 12% cover 32%}
-  .section .card:nth-child(4){animation-range:entry 14% cover 34%}
-  .section .card:nth-child(5){animation-range:entry 16% cover 36%}
-  .section .card:nth-child(6){animation-range:entry 18% cover 38%}
+:root{
+  --motion-ease:cubic-bezier(.16,1,.3,1);
+  --motion-smooth:cubic-bezier(.22,1,.36,1);
 }
 
-@keyframes sectionReveal {
-  from {
-    opacity: .08;
-    transform: translateY(34px) scale(.985);
-    filter: blur(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
+/* ---------- core keyframes ---------- */
+@keyframes fiveHeroIn{
+  0%{opacity:0;transform:translate3d(0,34px,0) scale(.975);filter:blur(10px)}
+  60%{opacity:1;transform:translate3d(0,-3px,0) scale(1.005);filter:blur(0)}
+  100%{opacity:1;transform:none;filter:none}
+}
+@keyframes fiveTextIn{
+  0%{opacity:0;transform:translate3d(0,22px,0);filter:blur(7px)}
+  100%{opacity:1;transform:none;filter:none}
+}
+@keyframes fiveRise{
+  0%{opacity:0;transform:translate3d(0,28px,0) scale(.985);filter:blur(6px)}
+  100%{opacity:1;transform:none;filter:none}
+}
+@keyframes fiveImageIn{
+  0%{opacity:0;transform:scale(1.045);filter:brightness(.55) saturate(.7);clip-path:inset(0 10% 0 10%)}
+  100%{opacity:1;transform:none;filter:none;clip-path:inset(0 0 0 0)}
+}
+@keyframes fiveLine{
+  0%{transform:scaleX(0);opacity:0}
+  25%{opacity:1}
+  100%{transform:scaleX(1);opacity:1}
+}
+@keyframes fivePulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(229,9,20,.25)}
+  50%{box-shadow:0 0 0 7px rgba(229,9,20,0)}
+}
+@keyframes fiveFloat{
+  0%,100%{transform:translate3d(0,0,0)}
+  50%{transform:translate3d(-16px,12px,0) scale(1.035)}
+}
+@keyframes fiveOrb{
+  0%,100%{transform:translate3d(0,0,0) rotate(0deg)}
+  50%{transform:translate3d(12px,-14px,0) rotate(1deg)}
+}
+@keyframes fiveSweep{
+  0%{transform:translateX(-130%) skewX(-18deg);opacity:0}
+  18%{opacity:.9}
+  100%{transform:translateX(560%) skewX(-18deg);opacity:0}
+}
+@keyframes fiveScan{
+  0%{transform:translateY(-120%);opacity:0}
+  12%{opacity:.25}
+  80%{opacity:.06}
+  100%{transform:translateY(650%);opacity:0}
+}
+@keyframes fiveGlow{
+  0%,100%{opacity:.35}
+  50%{opacity:1}
+}
+@keyframes fiveNavIn{
+  0%{opacity:0;transform:translateY(-12px)}
+  100%{opacity:1;transform:none}
 }
 
-/* =========================================================
-   HERO ORB + STAT MICRO-INTERACTIONS
-========================================================= */
-.stats .stat{
+/* ---------- first paint ---------- */
+.nav{
+  animation:fiveNavIn .7s var(--motion-ease) both;
+}
+.hero .container{
+  animation:fiveHeroIn .95s var(--motion-ease) both;
+}
+.hero .tag{
+  animation:fiveRise .65s .06s var(--motion-ease) both;
+}
+.hero h1{
+  animation:fiveTextIn .85s .12s var(--motion-ease) both;
+}
+.hero p{
+  animation:fiveTextIn .75s .22s var(--motion-ease) both;
+}
+.hero-actions,.hero-meta{
+  animation:fiveRise .75s .32s var(--motion-ease) both;
+}
+.hero .container:after{
+  animation:fiveScan 7s linear infinite;
+}
+.hero:before{
+  animation:fiveOrb 12s ease-in-out infinite;
+}
+.hero-orb-a{
+  animation:fiveOrb 13s ease-in-out infinite;
+}
+.hero-orb-b{
+  animation:fiveFloat 7s ease-in-out infinite;
+}
+.tag:before,.hero-meta i{
+  animation:fivePulse 2.4s ease-in-out infinite;
+}
+
+/* ---------- premium section rhythm ---------- */
+.section-head{
+  animation:fiveRise .72s .04s var(--motion-ease) both;
+}
+.section-title:after,.page-title:after{
+  animation:fiveLine .75s .18s var(--motion-ease) both;
+}
+.section-head>a{
+  transition:transform .45s var(--motion-ease),color .45s var(--motion-ease);
+}
+
+/* ---------- cards ---------- */
+.grid .card{
+  animation:fiveRise .78s var(--motion-ease) both;
+  animation-delay:calc(var(--card-index,0) * 70ms);
+}
+.grid .card:nth-child(2){--card-index:1}
+.grid .card:nth-child(3){--card-index:2}
+.grid .card:nth-child(4){--card-index:3}
+.grid .card:nth-child(5){--card-index:4}
+.grid .card:nth-child(6){--card-index:5}
+
+.card{
+  --mx:50%;
+  --my:50%;
+  transition:
+    transform .55s var(--motion-ease),
+    border-color .55s var(--motion-ease),
+    box-shadow .55s var(--motion-ease),
+    background .55s var(--motion-ease);
+}
+.card:before{
+  background:
+    radial-gradient(420px 240px at var(--mx) var(--my),rgba(229,9,20,.11),transparent 62%),
+    linear-gradient(120deg,rgba(255,255,255,.035),transparent 40%);
+}
+.card:after{
+  transition:opacity .45s ease,box-shadow .45s ease;
+}
+.card:hover{
+  transform:translate3d(0,-9px,0) scale(1.008);
+}
+.card:hover:after{
+  opacity:1;
+  box-shadow:0 0 24px rgba(229,9,20,.55);
+}
+.card img{
+  animation:fiveImageIn .85s .1s var(--motion-ease) both;
+  transition:transform .7s var(--motion-ease),filter .7s var(--motion-ease);
+}
+.card:hover img{
+  transform:scale(1.045);
+  filter:saturate(1.08) contrast(1.03);
+}
+
+/* moving glass highlight */
+.card,.glass-panel,.cta-panel,.stat-strip,.table-wrap{
   position:relative;
-  overflow:hidden;
-  transform:translateY(0);
+  isolation:isolate;
 }
-.stats .stat:after{
-  content:"";
-  position:absolute;
-  inset:-1px;
-  background:linear-gradient(120deg,transparent 20%,rgba(229,9,20,.16) 50%,transparent 80%);
-  transform:translateX(-120%);
-  opacity:0;
+.card:where(.glass-panel),.glass-panel:before{
   pointer-events:none;
 }
-.stats .stat:hover{
-  transform:translateY(-5px);
-  border-color:rgba(229,9,20,.38);
-  background:rgba(229,9,20,.055);
+.card:after{
+  z-index:2;
 }
-.stats .stat:hover:after{
-  opacity:1;
-  animation:statSweep .75s cubic-bezier(.16,1,.3,1) both;
-}
-@keyframes statSweep{
-  from{transform:translateX(-120%)}
-  to{transform:translateX(120%)}
+.card .tag{
+  position:relative;
 }
 
-/* Subtle mouse-like depth on interactive cards */
-.card {
-  will-change: transform;
-}
-
-
-/* =========================================================
-   JS SCROLL REVEAL
-========================================================= */
+/* ---------- scroll reveal, activated only by JS ---------- */
 .scroll-reveal{
   opacity:0;
-  transform:translate3d(0,42px,0) scale(.985);
+  transform:translate3d(0,34px,0) scale(.988);
   filter:blur(7px);
   transition:
-    opacity .72s cubic-bezier(.16,1,.3,1),
-    transform .82s cubic-bezier(.16,1,.3,1),
-    filter .72s cubic-bezier(.16,1,.3,1);
+    opacity .72s var(--motion-ease),
+    transform .82s var(--motion-ease),
+    filter .72s var(--motion-ease);
   transition-delay:var(--reveal-delay,0ms);
 }
 .scroll-reveal.is-visible{
@@ -146,12 +184,101 @@ body.page-exit>*:not(.page-transition){animation:pageExit .38s cubic-bezier(.76,
   transform:none;
   filter:none;
 }
-.intro-copy.scroll-reveal{--reveal-delay:40ms}
-.principle.scroll-reveal:nth-child(2){--reveal-delay:90ms}
-.principle.scroll-reveal:nth-child(3){--reveal-delay:140ms}
-.principle.scroll-reveal:nth-child(4){--reveal-delay:190ms}
-.grid .card.scroll-reveal:nth-child(2){--reveal-delay:70ms}
-.grid .card.scroll-reveal:nth-child(3){--reveal-delay:140ms}
-.grid .card.scroll-reveal:nth-child(4){--reveal-delay:210ms}
-.grid .card.scroll-reveal:nth-child(5){--reveal-delay:280ms}
-.grid .card.scroll-reveal:nth-child(6){--reveal-delay:350ms}
+.scroll-reveal:nth-child(2){--reveal-delay:55ms}
+.scroll-reveal:nth-child(3){--reveal-delay:110ms}
+.scroll-reveal:nth-child(4){--reveal-delay:165ms}
+.scroll-reveal:nth-child(5){--reveal-delay:220ms}
+.scroll-reveal:nth-child(6){--reveal-delay:275ms}
+
+/* ---------- homepage premium details ---------- */
+.home-intro .intro-copy{
+  animation:fiveRise .85s .1s var(--motion-ease) both;
+}
+.principle{
+  transition:transform .5s var(--motion-ease),border-color .5s ease,background .5s ease;
+}
+.principle:hover{
+  transform:translateX(7px);
+  border-color:rgba(229,9,20,.28);
+}
+.stat-strip>div{
+  transition:transform .45s var(--motion-ease),background .45s ease;
+}
+.stat-strip>div:hover{
+  transform:translateY(-5px);
+  background:rgba(229,9,20,.035);
+}
+
+/* ---------- buttons / inputs ---------- */
+.btn{
+  transition:transform .45s var(--motion-ease),box-shadow .45s var(--motion-ease),border-color .45s ease,background .45s ease;
+}
+.btn:after{
+  animation:none;
+}
+.btn:hover:after{
+  animation:fiveSweep .85s var(--motion-ease) both;
+}
+.field input,.field textarea,.field select{
+  transition:transform .4s var(--motion-ease),border-color .4s ease,box-shadow .4s var(--motion-ease);
+}
+.field input:focus,.field textarea:focus,.field select:focus{
+  transform:translateY(-2px);
+}
+
+/* ---------- navigation ---------- */
+.links a{
+  transition:color .35s ease,background .35s ease,transform .35s var(--motion-ease);
+}
+.links a:after{
+  transition:transform .45s var(--motion-ease);
+}
+.brand img{
+  transition:transform .55s var(--motion-ease),filter .55s ease,opacity .3s ease;
+}
+.brand:hover img{
+  transform:scale(1.025);
+}
+
+/* ---------- article / table ---------- */
+.article img{
+  transition:transform .7s var(--motion-ease),box-shadow .7s ease,border-color .5s ease;
+}
+.article img:hover{
+  transform:scale(1.012);
+  border-color:rgba(229,9,20,.3);
+  box-shadow:0 42px 110px rgba(0,0,0,.7),0 0 35px rgba(229,9,20,.08);
+}
+.table tbody tr{
+  transition:background .3s ease,transform .3s var(--motion-ease);
+}
+.table tbody tr:hover{
+  background:rgba(229,9,20,.035);
+}
+
+/* ---------- footer ---------- */
+.footer{
+  animation:fiveRise .8s .05s var(--motion-ease) both;
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;
+    animation-delay:0ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+    scroll-behavior:auto!important;
+  }
+  .scroll-reveal{
+    opacity:1!important;
+    transform:none!important;
+    filter:none!important;
+  }
+}
+
+/* ---------- mobile safety ---------- */
+@media (max-width:900px){
+  .grid .card{animation-delay:0ms}
+  .principle:hover{transform:none}
+}
