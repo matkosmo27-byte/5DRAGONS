@@ -1004,6 +1004,56 @@ function pageTransitions() {
     });
 }
 
+
+/* =========================================================
+   SCROLL REVEAL
+========================================================= */
+function scrollAnimations() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const selector = [
+        '.section',
+        '.section-head',
+        '.intro-copy',
+        '.principle',
+        '.stat-strip',
+        '.cta-panel',
+        '.grid .card',
+        '.article',
+        '.table-wrap'
+    ].join(',');
+
+    const seen = new WeakSet();
+
+    const reveal = element => {
+        if (!element || seen.has(element)) return;
+        seen.add(element);
+        element.classList.add('scroll-reveal');
+        observer.observe(element);
+    };
+
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, {
+        threshold: 0.12,
+        rootMargin: '0px 0px -7% 0px'
+    });
+
+    const scan = () => {
+        document.querySelectorAll(selector).forEach(reveal);
+    };
+
+    scan();
+
+    const mutationObserver = new MutationObserver(scan);
+    mutationObserver.observe(document.body, { childList: true, subtree: true });
+}
+
 /* =========================================================
    START
 ========================================================= */
@@ -1027,6 +1077,8 @@ document.addEventListener(
         auth();
         article();
         profile();
+
+        scrollAnimations();
 
         try {
             pageTransitions();
