@@ -911,7 +911,7 @@ function pageTransitions() {
         .five-transition.closing .line {
             animation: fiveLine .62s cubic-bezier(.16,1,.3,1) both;
         }
-        .five-transition.opening .line {
+        .five-transition.open .line {
             animation: fiveLineOut .7s cubic-bezier(.16,1,.3,1) both;
         }
 
@@ -936,7 +936,7 @@ function pageTransitions() {
         .five-transition.closing .logo-mark {
             animation: fiveMark .62s cubic-bezier(.16,1,.3,1) both;
         }
-        .five-transition.opening .logo-mark {
+        .five-transition.open .logo-mark {
             animation: fiveMarkOut .55s cubic-bezier(.76,0,.24,1) both;
         }
 
@@ -975,7 +975,7 @@ function pageTransitions() {
 
     // KLUCZ: startujemy zamknięciem, a dopiero w następnej klatce otwieramy.
     requestAnimationFrame(() => {
-        overlay.classList.add('opening');
+        overlay.classList.add('open');
         setTimeout(() => overlay.remove(), 850);
     });
 
