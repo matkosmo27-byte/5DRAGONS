@@ -1070,7 +1070,7 @@ ${message}
                     const result = await env.DB.prepare(`
                         SELECT *
                         FROM news
-                        WHERE status = 'PUBLISHED'
+                        WHERE COALESCE(status, 'PUBLISHED') <> 'ARCHIVED'
                         ORDER BY
                             COALESCE(published_at, created_at) DESC,
                             id DESC
