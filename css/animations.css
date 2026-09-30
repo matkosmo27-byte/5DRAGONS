@@ -126,3 +126,32 @@ body.page-exit>*:not(.page-transition){animation:pageExit .38s cubic-bezier(.76,
 .card {
   will-change: transform;
 }
+
+
+/* =========================================================
+   JS SCROLL REVEAL
+========================================================= */
+.scroll-reveal{
+  opacity:0;
+  transform:translate3d(0,42px,0) scale(.985);
+  filter:blur(7px);
+  transition:
+    opacity .72s cubic-bezier(.16,1,.3,1),
+    transform .82s cubic-bezier(.16,1,.3,1),
+    filter .72s cubic-bezier(.16,1,.3,1);
+  transition-delay:var(--reveal-delay,0ms);
+}
+.scroll-reveal.is-visible{
+  opacity:1;
+  transform:none;
+  filter:none;
+}
+.intro-copy.scroll-reveal{--reveal-delay:40ms}
+.principle.scroll-reveal:nth-child(2){--reveal-delay:90ms}
+.principle.scroll-reveal:nth-child(3){--reveal-delay:140ms}
+.principle.scroll-reveal:nth-child(4){--reveal-delay:190ms}
+.grid .card.scroll-reveal:nth-child(2){--reveal-delay:70ms}
+.grid .card.scroll-reveal:nth-child(3){--reveal-delay:140ms}
+.grid .card.scroll-reveal:nth-child(4){--reveal-delay:210ms}
+.grid .card.scroll-reveal:nth-child(5){--reveal-delay:280ms}
+.grid .card.scroll-reveal:nth-child(6){--reveal-delay:350ms}
