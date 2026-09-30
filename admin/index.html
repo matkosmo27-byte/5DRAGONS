@@ -87,6 +87,60 @@ async function editItem(type,item){
         };
         return;
     }
+
+    if(type==="news"){
+        const modal=document.createElement("div");
+        modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);z-index:50;overflow:auto;padding:30px";
+        const card=document.createElement("div");
+        card.style.cssText="max-width:900px;margin:30px auto;background:#0d0d0f;border:1px solid #242428;border-radius:15px;padding:22px";
+        card.innerHTML=`
+            <div class="head">
+                <h2>Edytuj news</h2>
+                <button type="button" class="btn secondary" id="closeEditNews">✕ Zamknij</button>
+            </div>
+            <form id="editNewsForm" class="form">
+                <div class="field full"><label>Tytuł</label><input name="title" required></div>
+                <div class="field"><label>Kategoria</label><input name="category"></div>
+                <div class="field"><label>Autor</label><input name="author"></div>
+                <div class="field full"><label>Zdjęcie główne / URL</label><input name="image" type="url"><input id="editNewsImageFile" type="file" accept="image/*"></div>
+                <div class="field full"><label>Krótki opis</label><textarea name="excerpt"></textarea></div>
+                <div class="field full"><label>Treść</label><textarea name="content" required style="min-height:260px"></textarea></div>
+                <div><button class="btn" type="submit">Zapisz zmiany</button></div>
+            </form>`;
+        modal.append(card);
+        document.body.append(modal);
+
+        const form=card.querySelector("#editNewsForm");
+        Object.keys(item||{}).forEach(key=>{
+            const input=form.elements[key];
+            if(input && input.type!=="file") input.value=item[key]??"";
+        });
+
+        const cleanup=()=>modal.remove();
+        card.querySelector("#closeEditNews").onclick=cleanup;
+        modal.addEventListener("click",e=>{if(e.target===modal)cleanup()});
+
+        form.onsubmit=async e=>{
+            e.preventDefault();
+            try{
+                const data=fd(form);
+                delete data.status;
+                delete data.published_at;
+                delete data.created_at;
+                delete data.updated_at;
+                const image=await uploadFile($("#editNewsImageFile"),"news");
+                if(image) data.image=image;
+                await api("/api/news/"+item.id,{method:"PATCH",body:JSON.stringify(data)});
+                cleanup();
+                toast("News zapisany");
+                await loadNews();
+            }catch(x){
+                toast(x.message||"Nie udało się zapisać zmian.");
+            }
+        };
+        return;
+    }
+
     const configs={
         match:[
             ["opponent","Przeciwnik"],["opponent_logo","Logo przeciwnika"],["date","Data"],["time","Godzina"],
