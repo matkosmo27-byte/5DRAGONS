@@ -193,7 +193,7 @@ function updateLoginLink() {
    PLAYERS
 ========================================================= */
 
-async async function loadPlayers() {
+async function loadPlayers() {
     const box = $('[data-players]');
 
     if (!box) {
