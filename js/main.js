@@ -287,7 +287,7 @@ async function loadNews() {
     }
 
     try {
-        const data = await api('/api/news');
+        const data = await api('/api/news?_=' + Date.now());
 
         const news = Array.isArray(data.news)
             ? data.news
@@ -304,7 +304,7 @@ async function loadNews() {
 
         box.innerHTML = news.map(item => `
             <a
-                class="card"
+                class="card news-card"
                 href="article.html?id=${encodeURIComponent(item.id)}"
             >
 
@@ -898,7 +898,7 @@ function scrollAnimations() {
         '.principle',
         '.stat-strip',
         '.cta-panel',
-        '.grid .card',
+        '.grid .card:not(.news-card)',
         '.article',
         '.table-wrap'
     ].join(',');
