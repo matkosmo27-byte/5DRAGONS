@@ -1046,6 +1046,27 @@ ${message}
             if (parts[1] === "news") {
                 const id = getIdFromPath(parts);
                 if (method === "GET") {
+                    if (id) {
+                        const admin = await requireAdmin(request, env);
+                        if (!admin.ok) return admin.response;
+
+                        const item = await env.DB.prepare(`
+                            SELECT *
+                            FROM news
+                            WHERE id = ?
+                            LIMIT 1
+                        `).bind(id).first();
+
+                        if (!item) {
+                            return errorResponse(request, "Nie znaleziono newsu.", 404);
+                        }
+
+                        return json(request, {
+                            success: true,
+                            news: item
+                        });
+                    }
+
                     const result = await env.DB.prepare(`
                         SELECT *
                         FROM news
@@ -1091,6 +1112,12 @@ ${message}
                             request,
                             "Nieprawidłowe dane JSON."
                         );
+                    }
+
+                    // News dodawany z panelu jest od razu publicznie opublikowany.
+                    body.status = "PUBLISHED";
+                    if (!body.published_at) {
+                        body.published_at = new Date().toISOString();
                     }
 
                     const result = await dynamicInsert(
