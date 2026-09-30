@@ -708,10 +708,15 @@ async function article() {
                         : ''
                 }
 
+                ${item.excerpt ? `
+                            <p class="article-excerpt">
+                                ${escapeHtml(item.excerpt)}
+                            </p>
+                        ` : ''}
+
                 <div class="article-body">
                     ${formatArticleContent(
                         item.content ||
-                        item.excerpt ||
                         ''
                     )}
                 </div>
