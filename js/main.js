@@ -856,151 +856,31 @@ function formatArticleContent(value) {
 
 
 /* =========================================================
-   CINEMATIC NAVIGATION TRANSITIONS
+   PREMIUM MICRO-INTERACTIONS
 ========================================================= */
-function pageTransitions() {
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+function premiumInteractions() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return;
+    }
 
-    const style = document.createElement('style');
-    style.textContent = `
-        .five-transition {
-            position: fixed;
-            inset: 0;
-            z-index: 2147483647;
-            pointer-events: none;
-            overflow: hidden;
-            background: #050506;
-        }
-        .five-transition::before,
-        .five-transition::after {
-            content: "";
-            position: absolute;
-            top: -10%;
-            bottom: -10%;
-            width: 56%;
-            background:
-                linear-gradient(120deg, rgba(255,255,255,.025), transparent 22%),
-                linear-gradient(160deg, #0c0c0e 0%, #050506 58%, #120708 100%);
-            box-shadow: inset 0 0 100px rgba(0,0,0,.8), 0 0 80px rgba(0,0,0,.5);
-            transition: transform .72s cubic-bezier(.77,0,.175,1);
-        }
-        .five-transition::before {
-            left: -4%;
-            transform: translateX(0) skewX(-8deg);
-            border-right: 2px solid rgba(229,9,20,.65);
-        }
-        .five-transition::after {
-            right: -4%;
-            transform: translateX(0) skewX(8deg);
-            border-left: 2px solid rgba(229,9,20,.65);
-        }
-        .five-transition.open::before { transform: translateX(-112%) skewX(-8deg); }
-        .five-transition.open::after { transform: translateX(112%) skewX(8deg); }
+    const targets = document.querySelectorAll(
+        '.card, .glass-panel, .cta-panel, .stat-strip, .table-wrap'
+    );
 
-        .five-transition .line {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 100vw;
-            height: 3px;
-            transform: translate(-50%,-50%) scaleX(.15);
-            background: linear-gradient(90deg,transparent,#e50914 25%,#fff 50%,#e50914 75%,transparent);
-            box-shadow: 0 0 12px #e50914, 0 0 45px rgba(229,9,20,.9);
-            opacity: 0;
-        }
-        .five-transition.closing .line {
-            animation: fiveLine .62s cubic-bezier(.16,1,.3,1) both;
-        }
-        .five-transition.open .line {
-            animation: fiveLineOut .7s cubic-bezier(.16,1,.3,1) both;
-        }
+    targets.forEach(element => {
+        element.addEventListener('pointermove', event => {
+            const rect = element.getBoundingClientRect();
+            const x = ((event.clientX - rect.left) / rect.width) * 100;
+            const y = ((event.clientY - rect.top) / rect.height) * 100;
 
-        .five-transition .scan {
-            position: absolute;
-            inset: 0;
-            background: repeating-linear-gradient(0deg,transparent 0 5px,rgba(255,255,255,.025) 6px);
-            opacity: .35;
-        }
+            element.style.setProperty('--mx', x + '%');
+            element.style.setProperty('--my', y + '%');
+        }, { passive: true });
 
-        .five-transition .logo-mark {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%,-50%) scale(.72);
-            color: #fff;
-            font: 800 14px/1 Inter,Arial,sans-serif;
-            letter-spacing: .42em;
-            text-shadow: 0 0 24px rgba(229,9,20,.8);
-            opacity: 0;
-        }
-        .five-transition.closing .logo-mark {
-            animation: fiveMark .62s cubic-bezier(.16,1,.3,1) both;
-        }
-        .five-transition.open .logo-mark {
-            animation: fiveMarkOut .55s cubic-bezier(.76,0,.24,1) both;
-        }
-
-        @keyframes fiveLine {
-            0% { opacity: 0; transform: translate(-50%,-50%) scaleX(.05); }
-            35% { opacity: 1; transform: translate(-50%,-50%) scaleX(1); }
-            100% { opacity: 0; transform: translate(-50%,-50%) scaleX(.65); }
-        }
-        @keyframes fiveLineOut {
-            0% { opacity: 1; transform: translate(-50%,-50%) scaleX(1); }
-            100% { opacity: 0; transform: translate(-50%,-50%) scaleX(.02); }
-        }
-        @keyframes fiveMark {
-            0% { opacity: 0; transform: translate(-50%,-50%) scale(.7); }
-            35% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%,-50%) scale(1.12); }
-        }
-        @keyframes fiveMarkOut {
-            from { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-            to { opacity: 0; transform: translate(-50%,-50%) scale(1.15); }
-        }
-
-        body.five-exit > *:not(.five-transition) {
-            animation: fiveContentExit .48s cubic-bezier(.76,0,.24,1) both;
-        }
-        @keyframes fiveContentExit {
-            to { opacity: 0; transform: translateY(-18px) scale(.985); filter: blur(5px); }
-        }
-    `;
-    document.head.appendChild(style);
-
-    const overlay = document.createElement('div');
-    overlay.className = 'five-transition';
-    overlay.innerHTML = '<div class="scan"></div><div class="line"></div><div class="logo-mark">05 / 5DRAGONS</div>';
-    document.body.appendChild(overlay);
-
-    // KLUCZ: startujemy zamknięciem, a dopiero w następnej klatce otwieramy.
-    requestAnimationFrame(() => {
-        overlay.classList.add('open');
-        setTimeout(() => overlay.remove(), 850);
-    });
-
-    document.addEventListener('click', event => {
-        const link = event.target.closest('a[href]');
-        if (!link) return;
-
-        const href = link.getAttribute('href');
-        if (!href || href.startsWith('#') || href.startsWith('mailto:') ||
-            href.startsWith('tel:') || link.target === '_blank' ||
-            event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-
-        let url;
-        try { url = new URL(href, location.href); } catch { return; }
-        if (url.origin !== location.origin ||
-            (url.pathname === location.pathname && url.search === location.search)) return;
-
-        event.preventDefault();
-
-        overlay.className = 'five-transition closing';
-        document.body.classList.add('five-exit');
-
-        setTimeout(() => {
-            location.href = url.href;
-        }, 650);
+        element.addEventListener('pointerleave', () => {
+            element.style.setProperty('--mx', '50%');
+            element.style.setProperty('--my', '50%');
+        }, { passive: true });
     });
 }
 
@@ -1079,12 +959,7 @@ document.addEventListener(
         profile();
 
         scrollAnimations();
-
-        try {
-            pageTransitions();
-        } catch (error) {
-            console.warn('Page transitions failed:', error);
-        }
+        premiumInteractions();
 
     }
 );
