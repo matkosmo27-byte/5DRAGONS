@@ -195,85 +195,54 @@ function updateLoginLink() {
 
 async function loadPlayers() {
     const box = $('[data-players]');
+    if (!box) return;
 
-    if (!box) {
-        return;
-    }
+    box.innerHTML = '<p class="muted">Ładowanie składu...</p>';
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
 
     try {
-        const data = await api('/api/players');
+        const data = await api('/api/players?_=' + Date.now(), {
+            signal: controller.signal
+        });
 
-        const players = Array.isArray(data.players)
-            ? data.players
-            : [];
+        const players = Array.isArray(data.players) ? data.players : [];
 
         if (!players.length) {
-            box.innerHTML = `
-                <p class="muted">
-                    Brak zawodników.
-                </p>
-            `;
+            box.innerHTML = '<p class="muted">API działa, ale nie ma aktywnych zawodników do wyświetlenia. Sprawdź status zawodników w panelu admina.</p>';
             return;
         }
 
         box.innerHTML = players.map(player => `
             <div class="card">
-
                 <div class="player">
-
-                    <img
-                        class="avatar"
-                        src="${player.photo || 'assets/logo5drag-transparent.png'}"
-                        alt="${player.nick || 'Player'}"
-                        onerror="this.src='assets/logo5drag-transparent.png'"
-                    >
-
+                    <img class="avatar"
+                         src="${escapeHtml(player.photo || 'assets/logo5drag-transparent.png')}"
+                         alt="${escapeHtml(player.nick || 'Player')}"
+                         onerror="this.onerror=null;this.src='assets/logo5drag-transparent.png'">
                     <div>
-                        <h3>
-                            ${player.nick || 'Unknown'}
-                        </h3>
-
-                        <span class="tag">
-                            ${player.role || 'RIFLER'}
-                        </span>
-
-                        <div class="muted">
-                            ${player.team || 'MAIN'}
-                        </div>
+                        <h3>${escapeHtml(player.nick || 'Unknown')}</h3>
+                        <span class="tag">${escapeHtml(player.role || 'RIFLER')}</span>
+                        <div class="muted">${escapeHtml(player.team || 'MAIN')}</div>
                     </div>
-
                 </div>
-
                 <div class="stats">
-
-                    <div class="stat">
-                        <strong>
-                            ${player.faceit_elo || 0}
-                        </strong>
-                        <small>ELO</small>
-                    </div>
-
-                    <div class="stat">
-                        <strong>
-                            ${player.faceit_level || 0}
-                        </strong>
-                        <small>FACEIT</small>
-                    </div>
-
+                    <div class="stat"><strong>${Number(player.faceit_elo) || 0}</strong><small>ELO</small></div>
+                    <div class="stat"><strong>${Number(player.faceit_level) || 0}</strong><small>FACEIT</small></div>
                 </div>
-
             </div>
         `).join('');
-
     } catch (error) {
-        box.innerHTML = `
-            <p class="muted">
-                ${escapeHtml(error.message)}
-            </p>
-        `;
+        const message = error.name === 'AbortError'
+            ? 'Serwer API nie odpowiedział w ciągu 12 sekund. Sprawdź wdrożenie API Cloudflare.'
+            : (error.message || 'Nie udało się pobrać składu.');
+        box.innerHTML = '<p class="muted">' + escapeHtml(message) + '</p>';
+        console.error('Błąd ładowania składu:', error);
+    } finally {
+        clearTimeout(timeout);
     }
 }
-
 
 /* =========================================================
    NEWS
